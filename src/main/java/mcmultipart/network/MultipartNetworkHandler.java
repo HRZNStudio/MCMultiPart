@@ -4,13 +4,18 @@ import mcmultipart.MCMultiPart;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.management.PlayerChunkMap;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.LogicalSidedProvider;
+import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.HashMap;
@@ -18,7 +23,12 @@ import java.util.Map;
 
 public class MultipartNetworkHandler {
 
-    public static final SimpleNetworkWrapper wrapper = NetworkRegistry.INSTANCE.newSimpleChannel(MCMultiPart.MODID);
+    public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
+            new ResourceLocation(MCMultiPart.MODID, "network"),
+            () -> "1.0.0",
+            s -> s.equals("1.0.0"),
+            s -> s.equals("1.0.0")
+    );
 
     private static Map<Triple<Integer, Integer, Integer>, ChangeList> changeList = new HashMap<>();
 
@@ -26,7 +36,18 @@ public class MultipartNetworkHandler {
         // wrapper.registerMessage(PacketMultipartChange.class, PacketMultipartChange.class, 0, Side.CLIENT);
         // wrapper.registerMessage(PacketMultipartAdd.class, PacketMultipartAdd.class, 1, Side.CLIENT);
         // wrapper.registerMessage(PacketMultipartRemove.class, PacketMultipartRemove.class, 2, Side.CLIENT);
-        wrapper.registerMessage(PacketMultipartAction.class, PacketMultipartAction.class, 3, Side.CLIENT);
+        channel.registerMessage(0, PacketMultipartAction.class, (packet, buffer) -> packet.toBytes(buffer), buffer -> {
+            PacketMultipartAction action = new PacketMultipartAction();
+            action.fromBytes(buffer);
+            return action;
+        }, (packetMultipartAction, contextSupplier) -> {
+            NetworkEvent.Context context = contextSupplier.get();
+            if (context.getDirection().getReceptionSide() == LogicalSide.CLIENT) {
+                packetMultipartAction.handleClient(context.getSender());
+            } else {
+                packetMultipartAction.handleServer(context.getSender());
+            }
+        });
     }
 
     public static void queuePartChange(World world, MultipartAction action) {
@@ -35,7 +56,7 @@ public class MultipartNetworkHandler {
         int chunkX = action.pos.getX() >> 4;
         int chunkZ = action.pos.getZ() >> 4;
 
-        Triple<Integer, Integer, Integer> key = Triple.of(chunkX, chunkZ, world.provider.getDimension());
+        Triple<Integer, Integer, Integer> key = Triple.of(chunkX, chunkZ, world.getDimension().getType().getId());
         ChangeList cl = changeList.getOrDefault(key, new ChangeList());
         changeList.put(key, cl);
 
@@ -53,7 +74,7 @@ public class MultipartNetworkHandler {
         if (world.isRemote) return;
         int chunkX = pos.getX() >> 4;
         int chunkY = pos.getZ() >> 4;
-        int dim = world.provider.getDimension();
+        int dim = world.getDimension().getType().getId();
         Triple<Integer, Integer, Integer> key = Triple.of(chunkX, chunkY, dim);
         ChangeList cl = changeList.get(key);
         if (cl != null) {
@@ -63,16 +84,18 @@ public class MultipartNetworkHandler {
     }
 
     private static void flushChanges(int chunkX, int chunkY, int dim, ChangeList list) {
-        WorldServer world = DimensionManager.getWorld(dim);
-        PlayerChunkMap manager = world.getPlayerChunkMap();
-        for (EntityPlayer player : world.playerEntities) {
-            if (manager.isPlayerWatchingChunk((EntityPlayerMP) player, chunkX, chunkY)) {
-                wrapper.sendTo(new PacketMultipartAction(list), (EntityPlayerMP) player);
+        WorldServer world = DimensionManager.getWorld(LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER), DimensionType.getById(dim), false, false);
+        if (world != null) {
+            PlayerChunkMap manager = world.getPlayerChunkMap();
+            for (EntityPlayer player : world.playerEntities) {
+                if (manager.isPlayerWatchingChunk((EntityPlayerMP) player, chunkX, chunkY)) {
+                    channel.send(PacketDistributor.PLAYER.with(() -> (EntityPlayerMP) player), new PacketMultipartAction(list));
+                }
             }
         }
     }
 
     public static void sendToServer(Packet<?> message) {
-        wrapper.sendToServer(message);
+        channel.sendToServer(message);
     }
 }

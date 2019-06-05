@@ -7,6 +7,8 @@ import mcmultipart.api.slot.ISlottedContainer;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.registries.ForgeRegistry;
+import net.minecraftforge.registries.RegistryBuilder;
+import net.minecraftforge.registries.RegistryManager;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -68,24 +70,24 @@ public enum SlotRegistry {
 
     public List<IPartSlot> getSlots() {
         if (slotRegistry == null) {
-            slotRegistry = (ForgeRegistry<IPartSlot>) GameRegistry.findRegistry(IPartSlot.class);
+            slotRegistry = (ForgeRegistry<IPartSlot>) RegistryManager.ACTIVE.getRegistry(IPartSlot.class);
         }
         if (allSlots == null) {
-            allSlots = Collections.unmodifiableList(slotRegistry.getValues());
+            allSlots = Collections.unmodifiableList(new ArrayList<>(slotRegistry.getValues()));
         }
         return allSlots;
     }
 
     public int getSlotID(IPartSlot slot) {
         if (slotRegistry == null) {
-            slotRegistry = (ForgeRegistry<IPartSlot>) GameRegistry.findRegistry(IPartSlot.class);
+            slotRegistry = (ForgeRegistry<IPartSlot>) RegistryManager.ACTIVE.getRegistry(IPartSlot.class);
         }
         return slotRegistry.getID(slot);
     }
 
     public IPartSlot getSlotFromID(int slot) {
         if (slotRegistry == null) {
-            slotRegistry = (ForgeRegistry<IPartSlot>) GameRegistry.findRegistry(IPartSlot.class);
+            slotRegistry = (ForgeRegistry<IPartSlot>) RegistryManager.ACTIVE.getRegistry(IPartSlot.class);
         }
         return slotRegistry.getValue(slot);
     }

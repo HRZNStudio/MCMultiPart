@@ -15,11 +15,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.World;
+
+import java.util.Optional;
 
 public class ItemBlockMultipart extends ItemBlock {
 
@@ -80,7 +81,7 @@ public class ItemBlockMultipart extends ItemBlock {
 
         if (MultipartHelper.addPart(context.getWorld(), context.getPos(), slot, state, false)) {
             if (!context.getWorld().isRemote()) {
-                IPartInfo info = MultipartHelper.getContainer(context.getWorld(), context.getPos()).flatMap(c -> c.get(slot)).orElse(null);
+                IPartInfo info = MultipartHelper.getContainer(context.getWorld(), context.getPos()).map(c -> c.get(slot)).orElse(Optional.empty()).orElse(null);
                 if (info != null) {
                     setMultipartTileNBT(context.getPlayer(), context.getItem(), info);
                     multipartBlock.onPartPlacedBy(info, context.getPlayer(), context.getItem());
@@ -160,7 +161,7 @@ public class ItemBlockMultipart extends ItemBlock {
 
     public interface IExtendedBlockPlacementInfo {
 
-        IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, EntityLivingBase placer, EnumHand hand, IBlockState state);
+        IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, EntityLivingBase placer, IBlockState state);
 
     }
 

@@ -18,6 +18,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.LazyOptional;
 
 import java.util.Collections;
 import java.util.Map;
@@ -38,11 +39,14 @@ public final class MultipartHelper {
         Preconditions.checkState(part != null, "The blockstate " + state + " could not be converted to a multipart!");
         IMultipartTile tile = part.createMultipartTile(world, slot, state);
 
-        Optional<IMultipartContainer> containerOpt = getOrConvertContainer(world, pos);
-        if (!containerOpt.isPresent() || containerOpt.get().getParts().isEmpty()) {
+        LazyOptional<IMultipartContainer> containerOpt = getOrConvertContainer(world, pos);
+        if (!containerOpt.isPresent()) {
             return false;
         }
         IMultipartContainer container = containerOpt.orElseGet(() -> createTile.apply(world, pos));
+        if(container.getParts().isEmpty()) {
+            return false;
+        }
 
         if (container.canAddPart(slot, state, tile)) {
             if (!simulated && !world.isRemote) {
@@ -89,36 +93,36 @@ public final class MultipartHelper {
         return getContainer(world, pos).map(c -> c.getState(slot)).orElseGet(() -> Optional.of(world.getBlockState(pos)));
     }
 
-    public static Optional<IMultipartContainer> getContainer(IBlockReader world, BlockPos pos) {
+    public static LazyOptional<IMultipartContainer> getContainer(IBlockReader world, BlockPos pos) {
         if (world.getBlockState(pos).getBlock() instanceof IMultipartContainerBlock) {
             TileEntity te = world.getTileEntity(pos);
             if (te != null) {
-                return MultipartCapabilityHelper.optional(te, MCMPCapabilities.MULTIPART_CONTAINER, null);
+                return te.getCapability(MCMPCapabilities.MULTIPART_CONTAINER);
             }
         } else if (world instanceof World) {
             IBlockState state = world.getBlockState(pos);
             IMultipart part = getPart.apply(state.getBlock());
             if (part != null) {
-                return Optional.of(new DummyPartInfo((World) world, pos, part.getSlotFromWorld(world, pos, state), state, part));
+                return LazyOptional.of(() -> new DummyPartInfo((World) world, pos, part.getSlotFromWorld(world, pos, state), state, part)).cast();
             }
         }
-        return Optional.empty();
+        return LazyOptional.empty();
     }
 
-    public static Optional<IMultipartContainer> getOrConvertContainer(World world, BlockPos pos) {
+    public static LazyOptional<IMultipartContainer> getOrConvertContainer(World world, BlockPos pos) {
         IBlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof IMultipartContainerBlock) {
             TileEntity te = world.getTileEntity(pos);
             if (te != null) {
-                return MultipartCapabilityHelper.optional(te, MCMPCapabilities.MULTIPART_CONTAINER, null);
+                return te.getCapability(MCMPCapabilities.MULTIPART_CONTAINER);
             }
         } else {
             IMultipart part = getPart.apply(state.getBlock());
             if (part != null) {
-                return Optional.of(createTileFromWorldInfo.apply(world, pos));
+                return LazyOptional.of(()->createTileFromWorldInfo.apply(world, pos));
             }
         }
-        return Optional.empty();
+        return LazyOptional.empty();
     }
 
     public static World unwrapWorld(World world) {

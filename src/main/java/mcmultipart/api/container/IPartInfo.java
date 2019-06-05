@@ -9,31 +9,31 @@ import net.minecraft.world.World;
 
 public interface IPartInfo {
 
-    public default World getActualWorld() {
+    default World getActualWorld() {
         return getContainer() != null ? getContainer().getPartWorld() : null;
     }
 
-    public World getPartWorld();
+    World getPartWorld();
 
-    public default BlockPos getPartPos() {
+    default BlockPos getPartPos() {
         return getContainer() != null ? getContainer().getPartPos() : BlockPos.ORIGIN;
     }
 
-    public IMultipartContainer getContainer();
+    IMultipartContainer getContainer();
 
-    public IPartSlot getSlot();
+    IPartSlot getSlot();
 
-    public IMultipart getPart();
+    IMultipart getPart();
 
-    public IBlockState getState();
+    IBlockState getState();
 
-    public IMultipartTile getTile();
+    IMultipartTile getTile();
 
-    public default void remove() {
+    default void remove() {
         getContainer().removePart(getSlot());
     }
 
-    public default void notifyChange() {
+    default void notifyChange() {
         getContainer().notifyChange(this);
     }
 

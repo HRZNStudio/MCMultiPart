@@ -1,7 +1,6 @@
 package mcmultipart.multipart;
 
 import com.google.common.base.Preconditions;
-import javafx.geometry.Side;
 import mcmultipart.MCMultiPart;
 import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.multipart.IMultipart;
@@ -10,7 +9,7 @@ import mcmultipart.api.multipart.MultipartHelper;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.world.IWorldView;
 import mcmultipart.block.TileMultipartContainer;
-import mcmultipart.util.MCMPBlockReaderWrapper;
+import mcmultipart.util.MCMPWorldReaderWrapper;
 import mcmultipart.util.MCMPWorldWrapper;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -21,10 +20,11 @@ import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.*;
 import java.util.function.IntUnaryOperator;
@@ -206,7 +206,7 @@ public final class PartInfo implements IPartInfo {
             refreshWorld();
         }
 
-        if (checkTE && (this.tile == null || this.tile.shouldRefreshPart(getPartWorld(), getPartPos(), oldState, state))) {
+        if (checkTE && this.tile == null) {
             setTile(part.createMultipartTile(getPartWorld(), getSlot(), state));
         }
     }
@@ -227,12 +227,12 @@ public final class PartInfo implements IPartInfo {
         }
     }
 
-    public IBlockReader wrapAsNeeded(IBlockReader world) {
+    public IWorldReader wrapAsNeeded(IWorldReader world) {
         if (view != null) {
             if (world == this.world || world == this.world.getActualWorld()) {
                 return this.world;
             } else {
-                return new MCMPBlockReaderWrapper(world, this, view);
+                return new MCMPWorldReaderWrapper(world, this, view);
             }
         }
         return world;
@@ -258,26 +258,24 @@ public final class PartInfo implements IPartInfo {
         return scheduledTicks != null && !scheduledTicks.isEmpty();
     }
 
-    @SideOnly(Side.CLIENT)
-    public ClientInfo getInfo(IBlockReader world, BlockPos pos) {
-        IBlockReader world_ = wrapAsNeeded(world);
-        IBlockState actualState = part.getActualState(world_, pos, this);
-        IBlockState extendedState = part.getExtendedState(world_, pos, this, actualState);
+    @OnlyIn(Dist.CLIENT)
+    public ClientInfo getInfo(IWorldReader world, BlockPos pos) {
+        IWorldReader world_ = wrapAsNeeded(world);
         Set<BlockRenderLayer> renderLayers;
         if (state.getRenderType() != EnumBlockRenderType.INVISIBLE) {
             renderLayers = EnumSet.noneOf(BlockRenderLayer.class);
             RENDER_LAYERS//
                     .stream()//
-                    .filter(layer -> part.canRenderInLayer(world_, pos, this, actualState, layer))//
+                    .filter(layer -> part.canRenderInLayer(world_, pos, this, state, layer))//
                     .forEach(renderLayers::add);
         } else {
             renderLayers = Collections.emptySet();
         }
-        return new ClientInfo(actualState, extendedState, renderLayers,
-                index -> Minecraft.getMinecraft().getBlockColors().colorMultiplier(extendedState, world_, pos, index));
+        return new ClientInfo(state, state, renderLayers,
+                index -> Minecraft.getInstance().getBlockColors().getColor(state, world_, pos, index));
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public class ClientInfo {
 
         private final IBlockState actualState, extendedState;

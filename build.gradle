@@ -48,7 +48,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.13.2-25.0.191'
+    minecraft 'net.minecraftforge:forge:1.13.2-25.0.219'
     compileOnly 'org.projectlombok:lombok:1.18.8'
 }
 

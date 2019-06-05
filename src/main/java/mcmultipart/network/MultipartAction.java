@@ -9,7 +9,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -53,7 +52,12 @@ public abstract class MultipartAction {
 
         static {
             try {
-                Field f = ReflectionHelper.findField(SPacketUpdateTileEntity.class, "field_148860_e", "nbt");
+                Field f = null;
+                try {
+                    f=SPacketUpdateTileEntity.class.getDeclaredField("field_148860_e");
+                } catch (Exception e) {
+                    f=SPacketUpdateTileEntity.class.getDeclaredField("nbt");
+                }
                 SPacketUpdateTileEntity$nbt = MethodHandles.lookup().unreflectGetter(f);
             } catch (Exception ex) {
                 throw Throwables.propagate(ex);

@@ -46,10 +46,10 @@ public enum MultipartRegistry implements IMultipartRegistry {
         wrappedBlock.setPlacementInfo(block::getStateForPlacement);
         if (item instanceof ItemBlock) {
             wrappedBlock.setBlockPlacementLogic(
-                    (stack, player, world, pos, facing, hitX, hitY, hitZ, newState) -> player.canPlayerEdit(pos, facing, stack)
-                            && world.getBlockState(pos).getBlock().isReplaceable(world, pos)
-                            && block.canPlaceBlockAt(world, pos) && block.canPlaceBlockOnSide(world, pos, facing)
-                            && ((ItemBlock) item).placeBlockAt(stack, player, world, pos, facing, hitX, hitY, hitZ, newState));
+                    (context, newState) -> context.getPlayer().canPlayerEdit(context.getPos(), context.getFace(), context.getItem())
+                            && context.getWorld().getBlockState(context.getPos()).getBlock().isReplaceable(context.getWorld().getBlockState(context.getPos()), context)
+//                            && block.canPlaceBlockAt(world, pos) && block.canPlaceBlockOnSide(world, pos, facing)
+                            && context.getWorld().setBlockState(context.getPos(), newState, 11));
         }
         STACK_WRAPPING_MAP.putIfAbsent(item, Pair.of(predicate, Pair.of(wrappedBlock, part)));
         return wrappedBlock;
@@ -91,9 +91,9 @@ public enum MultipartRegistry implements IMultipartRegistry {
         @Override
         public IWrappedBlock setPlacementInfo(IExtendedBlockPlacementInfo info) {
             IBlockPlacementInfo prevInfo = this.placementInfo;
-            this.placementInfo = (world, pos, facing, hitX, hitY, hitZ, meta, placer, hand) -> info.getStateForPlacement(world, pos, facing,
-                    hitX, hitY, hitZ, meta, placer, hand,
-                    prevInfo.getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, meta, placer, hand));
+            this.placementInfo = (context) -> info.getStateForPlacement(context.getWorld(), context.getPos(), context.getFace(),
+                    context.getHitX(), context.getHitY(), context.getHitZ(), context.getPlayer(),
+                    prevInfo.getStateForPlacement(context));
             return this;
         }
 

@@ -21,10 +21,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.Explosion;
+import net.minecraft.world.*;
 import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorldReader;
-import net.minecraft.world.World;
 import net.minecraftforge.common.IPlantable;
 
 import java.util.Collections;
@@ -84,7 +82,7 @@ public interface IMultipart {
     IPartSlot getSlotForPlacement(World world, BlockPos pos, IBlockState state, EnumFacing facing, float hitX, float hitY,
                                   float hitZ, EntityLivingBase placer);
 
-    IPartSlot getSlotFromWorld(IWorldReader world, BlockPos pos, IBlockState state);
+    IPartSlot getSlotFromWorld(IBlockReader world, BlockPos pos, IBlockState state);
 
     default Set<IPartSlot> getGhostSlots(IPartInfo part) {
         return Collections.emptySet();
@@ -98,7 +96,7 @@ public interface IMultipart {
         return MultipartOcclusionHelper.testBoxIntersection(this.getOcclusionBoxes(self), otherPart.getPart().getOcclusionBoxes(otherPart));
     }
 
-    default boolean canRenderInLayer(IWorldReader world, BlockPos pos, IPartInfo part, IBlockState state, BlockRenderLayer layer) {
+    default boolean canRenderInLayer(IBlockReader world, BlockPos pos, IPartInfo part, IBlockState state, BlockRenderLayer layer) {
         return state.getBlock().canRenderInLayer(state, layer);
     }
 
@@ -119,15 +117,15 @@ public interface IMultipart {
     }
 
 
-    default boolean canConnectRedstone(IWorldReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
+    default boolean canConnectRedstone(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
         return part.getState().getBlock().canConnectRedstone(part.getState(), world, pos, side);
     }
 
-    default int getWeakPower(IWorldReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
+    default int getWeakPower(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
         return part.getState().getWeakPower(world, pos, side);
     }
 
-    default int getStrongPower(IWorldReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
+    default int getStrongPower(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
         return part.getState().getStrongPower(world, pos, side);
     }
 
@@ -135,7 +133,7 @@ public interface IMultipart {
         return part.getState().getBlock().canCreatureSpawn(part.getState(), world, pos, type, entity);
     }
 
-    default boolean canSustainPlant(IWorldReader world, BlockPos pos, IPartInfo part, EnumFacing direction, IPlantable plantable) {
+    default boolean canSustainPlant(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing direction, IPlantable plantable) {
         return part.getState().getBlock().canSustainPlant(part.getState(), world, pos, direction, plantable);
     }
 
@@ -147,7 +145,7 @@ public interface IMultipart {
         return part.getState().getComparatorInputOverride(part.getPartWorld(), part.getPartPos());
     }
 
-    default List<ItemStack> getDrops(IWorldReader world, BlockPos pos, IPartInfo part, int fortune) {
+    default List<ItemStack> getDrops(IBlockReader world, BlockPos pos, IPartInfo part, int fortune) {
 //        return part.getState().getBlock().getDrops(part.getState(), world, pos, fortune);/**/
         return Collections.emptyList(); //TODO
     }
@@ -160,7 +158,7 @@ public interface IMultipart {
         return part.getState().getBlock().getEnchantPowerBonus(part.getState(), part.getPartWorld(), part.getPartPos());
     }
 
-    default int getLightOpacity(IWorldReader world, BlockPos pos, IPartInfo part) {
+    default int getLightOpacity(IBlockReader world, BlockPos pos, IPartInfo part) {
         return part.getState().getOpacity(world, pos);
     }
 
@@ -184,7 +182,7 @@ public interface IMultipart {
         return part.getState().getBlock().isBeaconBase(part.getState(), world, pos, beacon);
     }
 
-    default boolean isBurning(IWorldReader world, BlockPos pos, IPartInfo part) {
+    default boolean isBurning(IBlockReader world, BlockPos pos, IPartInfo part) {
         return part.getState().getBlock().isBurning(part.getState(), world, pos);
     }
 
@@ -196,7 +194,7 @@ public interface IMultipart {
         return part.getState().getBlock().isFireSource(part.getState(), part.getPartWorld(), part.getPartPos(), side);
     }
 
-    default boolean isFlammable(IWorldReader world, BlockPos pos, IPartInfo part, EnumFacing face) {
+    default boolean isFlammable(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing face) {
         return part.getState().getBlock().isFlammable(part.getState(), world, pos, face);
     }
 

@@ -11,19 +11,19 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.client.renderer.block.model.ModelResourceLocation;
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.renderer.model.ModelResourceLocation;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.client.event.ModelBakeEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
 
 import java.util.Optional;
 
@@ -36,12 +36,12 @@ public class MCMPClientProxy extends MCMPCommonProxy {
 
     @Override
     public void init() {
-        Minecraft.getMinecraft().getBlockColors().registerBlockColorHandler((s, w, p, i) -> i, MCMultiPart.multipart);
+        Minecraft.getInstance().getBlockColors().register((s, w, p, i) -> i, MCMultiPart.multipart);
     }
 
     @Override
     public EntityPlayerSP getPlayer() {
-        return Minecraft.getMinecraft().player;
+        return Minecraft.getInstance().player;
     }
 
     @Override
@@ -50,18 +50,18 @@ public class MCMPClientProxy extends MCMPCommonProxy {
     }
 
     @Override
-    public void scheduleTick(Runnable runnable, Side side) {
+    public void scheduleTick(Runnable runnable, Dist side) {
         super.scheduleTick(runnable, side);
-        if (side == Side.CLIENT) {
-            Minecraft.getMinecraft().addScheduledTask(runnable);
+        if (side == Dist.CLIENT) {
+            Minecraft.getInstance().addScheduledTask(runnable);
         }
     }
 
     @SubscribeEvent
     public void onModelBake(ModelBakeEvent event) {
-        event.getModelRegistry().putObject(new ModelResourceLocation(MCMultiPart.multipart.getRegistryName(), "ticking=false"),
+        event.getModelRegistry().put(new ModelResourceLocation(MCMultiPart.multipart.getRegistryName(), "ticking=false"),
                 new ModelMultipartContainer());
-        event.getModelRegistry().putObject(new ModelResourceLocation(MCMultiPart.multipart.getRegistryName(), "ticking=true"),
+        event.getModelRegistry().put(new ModelResourceLocation(MCMultiPart.multipart.getRegistryName(), "ticking=true"),
                 new ModelMultipartContainer());
     }
 
@@ -71,7 +71,7 @@ public class MCMPClientProxy extends MCMPCommonProxy {
             return;
         }
         RayTraceResult hit = event.getTarget();
-        if (hit.typeOfHit != RayTraceResult.Type.BLOCK) {
+        if (hit.type != RayTraceResult.Type.BLOCK) {
             return;
         }
 
@@ -102,9 +102,9 @@ public class MCMPClientProxy extends MCMPCommonProxy {
             if (!MinecraftForge.EVENT_BUS
                     .post(new DrawMultipartHighlightEvent(event.getContext(), player, hit, slotID, partialTicks, info))) {
                 GlStateManager.enableBlend();
-                GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+                GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
                         GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
-                GlStateManager.glLineWidth(2.0F);
+                GlStateManager.lineWidth(2.0F);
                 GlStateManager.disableTexture2D();
                 GlStateManager.depthMask(false);
                 IBlockState state = info.getState();
@@ -113,8 +113,8 @@ public class MCMPClientProxy extends MCMPCommonProxy {
                     double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
                     double y = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
                     double z = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
-                    RenderGlobal.drawSelectionBoundingBox(info.getPart().getSelectedBoundingBox(info).grow(0.002).offset(-x, -y, -z),
-                            0.0F, 0.0F, 0.0F, 0.4F);
+                    WorldRenderer.drawShape(info.getPart().getRenderShape(info.getState(), info.getActualWorld(), info.getPartPos()).withOffset(-x, -y, -z),
+                            0.0F, 0.0F, 0.0F, 1, 1, 1, 1);
                 }
 
                 GlStateManager.depthMask(true);

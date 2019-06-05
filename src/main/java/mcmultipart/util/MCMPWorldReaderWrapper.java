@@ -1,22 +1,28 @@
 package mcmultipart.util;
 
+import lombok.experimental.Delegate;
 import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.world.IMultipartBlockReader;
 import mcmultipart.api.world.IWorldView;
 import mcmultipart.multipart.PartInfo;
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.fluid.IFluidState;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorldReader;
+import net.minecraft.world.chunk.Chunk;
 
-public class MCMPBlockReaderWrapper implements IBlockReader, IMultipartBlockReader {
+public class MCMPWorldReaderWrapper implements IWorldReader, IMultipartBlockReader {
 
-    private final IBlockReader parent;
+    @Delegate(excludes = Ignore.class)
+    private final IWorldReader parent;
     private final PartInfo partInfo;
     private final IWorldView view;
 
-    public MCMPBlockReaderWrapper(IBlockReader parent, PartInfo partInfo, IWorldView view) {
+    public MCMPWorldReaderWrapper(IWorldReader parent, PartInfo partInfo, IWorldView view) {
         this.parent = parent;
         this.partInfo = partInfo;
         this.view = view;
@@ -42,13 +48,8 @@ public class MCMPBlockReaderWrapper implements IBlockReader, IMultipartBlockRead
         return view.getActualState(parent, pos);
     }
 
-    @Override
-    public int getMaxLightLevel() {
-        return parent.getMaxLightLevel();
-    }
-
-    @Override
-    public IFluidState getFluidState(BlockPos pos) {
-        return parent.getFluidState(pos);
+    private interface Ignore {
+        IBlockState getBlockState(BlockPos pos);
+        TileEntity getTileEntity(BlockPos pos);
     }
 }

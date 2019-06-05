@@ -15,48 +15,48 @@ import java.util.Optional;
 
 public interface IMultipartContainer extends ISlottedContainer<IPartInfo> {
 
-    public World getPartWorld();
+    World getPartWorld();
 
-    public BlockPos getPartPos();
+    BlockPos getPartPos();
 
     @Override
-    public Optional<IPartInfo> get(IPartSlot slot);
+    Optional<IPartInfo> get(IPartSlot slot);
 
-    public default Optional<IMultipart> getPart(IPartSlot slot) {
+    default Optional<IMultipart> getPart(IPartSlot slot) {
         return get(slot).map(IPartInfo::getPart);
     }
 
-    public default Optional<IMultipartTile> getPartTile(IPartSlot slot) {
+    default Optional<IMultipartTile> getPartTile(IPartSlot slot) {
         return get(slot).map(IPartInfo::getTile);
     }
 
-    public default Optional<IBlockState> getState(IPartSlot slot) {
+    default Optional<IBlockState> getState(IPartSlot slot) {
         return get(slot).map(IPartInfo::getState);
     }
 
-    public Map<IPartSlot, ? extends IPartInfo> getParts();
+    Map<IPartSlot, ? extends IPartInfo> getParts();
 
-    public default boolean canAddPart(IPartSlot slot, IBlockState state) {
+    default boolean canAddPart(IPartSlot slot, IBlockState state) {
         IMultipart part = MultipartRegistry.INSTANCE.getPart(state.getBlock());
         Preconditions.checkState(part != null, "The blockstate " + state + " could not be converted to a multipart!");
         IMultipartTile tile = part.createMultipartTile(getPartWorld(), slot, state);
         return canAddPart(slot, state, tile);
     }
 
-    public boolean canAddPart(IPartSlot slot, IBlockState state, IMultipartTile tile);
+    boolean canAddPart(IPartSlot slot, IBlockState state, IMultipartTile tile);
 
-    public default void addPart(IPartSlot slot, IBlockState state) {
+    default void addPart(IPartSlot slot, IBlockState state) {
         IMultipart part = MultipartRegistry.INSTANCE.getPart(state.getBlock());
         Preconditions.checkState(part != null, "The blockstate " + state + " could not be converted to a multipart!");
         IMultipartTile tile = part.createMultipartTile(getPartWorld(), slot, state);
         addPart(slot, state, tile);
     }
 
-    public void addPart(IPartSlot slot, IBlockState state, IMultipartTile tile);
+    void addPart(IPartSlot slot, IBlockState state, IMultipartTile tile);
 
-    public void removePart(IPartSlot slot);
+    void removePart(IPartSlot slot);
 
-    public default void notifyChange(IPartInfo part) {
+    default void notifyChange(IPartInfo part) {
         for (IPartInfo info : getParts().values()) {
             if (info != part) {
                 info.getPart().onPartChanged(info, part);

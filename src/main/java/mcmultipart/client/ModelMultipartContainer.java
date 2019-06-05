@@ -13,8 +13,9 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.client.MinecraftForgeClient;
-import net.minecraftforge.common.property.IExtendedBlockState;
+import net.minecraftforge.client.model.data.IModelData;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
@@ -28,14 +29,15 @@ public class ModelMultipartContainer implements IBakedModel {
                 quad.getSprite(), quad.shouldApplyDiffuseLighting(), quad.getFormat()) : quad;
     }
 
+    @Nonnull
     @Override
-    public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, Random rand) {
-        List<PartInfo.ClientInfo> info = ((IExtendedBlockState) state).getValue(BlockMultipartContainer.PROPERTY_INFO);
+    public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, @Nonnull Random rand, @Nonnull IModelData extraData) {
+        List<PartInfo.ClientInfo> info = extraData.getData(BlockMultipartContainer.PROPERTY_INFO);
         BlockRendererDispatcher brd = Minecraft.getInstance().getBlockRendererDispatcher();
         if (info != null) {
             BlockRenderLayer layer = MinecraftForgeClient.getRenderLayer();
-            return info//
-                    .stream()//
+            return info
+                    .stream()
                     .filter(i -> i.canRenderInLayer(layer)) // Make sure it can render in this layer
                     .flatMap(i -> brd.getModelForState(i.getActualState()) // Get model
                             .getQuads(i.getExtendedState(), side, rand).stream() // Stream quads
@@ -43,6 +45,11 @@ public class ModelMultipartContainer implements IBakedModel {
                     .collect(Collectors.toList());
 
         }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, Random rand) {
         return Collections.emptyList();
     }
 

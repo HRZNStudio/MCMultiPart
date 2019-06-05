@@ -15,6 +15,7 @@ import mcmultipart.capability.CapabilityJoiner;
 import mcmultipart.capability.CapabilityJoiner.JoinedItemHandler;
 import mcmultipart.capability.CapabilityMultipartContainer;
 import mcmultipart.capability.CapabilityMultipartTile;
+import mcmultipart.client.MCMPClientProxy;
 import mcmultipart.multipart.MultipartRegistry;
 import mcmultipart.network.MultipartNetworkHandler;
 import mcmultipart.slot.SlotRegistry;
@@ -30,13 +31,9 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.Mod.EventHandler;
-import net.minecraftforge.fml.common.SidedProxy;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.GameData;
@@ -56,7 +53,6 @@ public class MCMultiPart {
 
     public static final String MODID = "mcmultipart", NAME = "MCMultiPart", VERSION = "%VERSION%";
 
-    @SidedProxy(serverSide = "mcmultipart.MCMPCommonProxy", clientSide = "mcmultipart.client.MCMPClientProxy")
     public static MCMPCommonProxy proxy;
 
     public static Logger log;
@@ -68,10 +64,39 @@ public class MCMultiPart {
     public static ForgeRegistry<MicroblockType> microblockTypeRegistry;
     public static ObjectIntIdentityMap<IBlockState> stateMap;
 
+    public static TileEntityType<TileMultipartContainer> TYPE;
+    public static TileEntityType<TileMultipartContainer.Ticking> TICKING_TYPE;
+
     private final List<IMCMPAddon> addons = new ArrayList<>();
 
     public MCMultiPart() {
         MinecraftForge.EVENT_BUS.register(this);
+        proxy = DistExecutor.runForDist(() -> MCMPClientProxy::new, () -> MCMPCommonProxy::new);
+
+        try {
+            initAPI();
+        } catch (Exception e) {
+            throw Throwables.propagate(e);
+        }
+
+        stateMap = GameData.getBlockStateIDMap();
+
+        CapabilityMultipartContainer.register();
+        CapabilityMultipartTile.register();
+
+        MultipartCapabilityHelper.registerCapabilityJoiner(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, JoinedItemHandler::join);
+
+        MultipartNetworkHandler.init();
+
+        MinecraftForge.EVENT_BUS.register(proxy);
+        proxy.preInit();
+
+        addons.forEach(a -> a.registerParts(MultipartRegistry.INSTANCE));
+
+        MultipartRegistry.INSTANCE.computeBlocks();
+        SlotRegistry.INSTANCE.computeAccess();
+
+        proxy.init();
     }
 
     @SubscribeEvent
@@ -110,71 +135,22 @@ public class MCMultiPart {
     }
 
     @SubscribeEvent
-    public void onBlockRegistryInit(RegistryEvent.Register<TileEntityType<?>> event) {
-        event.getRegistry().register(TileEntityType.Builder.create(TileMultipartContainer::new).build(null).setRegistryName(MODID + ":multipart.nonticking"));
-        event.getRegistry().register(TileEntityType.Builder.create(TileMultipartContainer.Ticking::new).build(null).setRegistryName(MODID + ":multipart.nonticking"));
-    }
-
-    @EventHandler
-    public void preInit(FMLCommonSetupEvent event) {
-        try {
-            initAPI();
-        } catch (Exception e) {
-            throw Throwables.propagate(e);
-        }
-
-        log = event.getModLog();
-
-
-        stateMap = GameData.getBlockStateIDMap();
-
-        CapabilityMultipartContainer.register();
-        CapabilityMultipartTile.register();
-
-        MultipartCapabilityHelper.registerCapabilityJoiner(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY,
-                JoinedItemHandler::join);
-
-        MultipartNetworkHandler.init();
-
-        MinecraftForge.EVENT_BUS.register(proxy);
-        proxy.preInit();
-
-//		event.getAsmData().getAll(MCMPAddon.class.getName()).forEach(a -> {
-//			try {
-//				Class<?> addon = Class.forName(a.getClassName());
-//				if (IMCMPAddon.class.isAssignableFrom(addon)) {
-//					addons.add((IMCMPAddon) addon.newInstance());
-//				}
-//			} catch (Exception e) {
-//				throw Throwables.propagate(e);
-//			}
-//		});
-        addons.forEach(a -> a.registerParts(MultipartRegistry.INSTANCE));
-
-        MultipartRegistry.INSTANCE.computeBlocks();
-        SlotRegistry.INSTANCE.computeAccess();
-
-        proxy.init();
-    }
-
-    public void init(FMLInitializationEvent event) {
-    }
-
-    @EventHandler
-    public void postInit(FMLPostInitializationEvent event) {
-
+    public void onTileRegistry(RegistryEvent.Register<TileEntityType<?>> event) {
+        TYPE=(TileEntityType<TileMultipartContainer>)TileEntityType.Builder.create(TileMultipartContainer::new).build(null).setRegistryName(MODID + ":multipart.nonticking");
+        TICKING_TYPE=(TileEntityType<TileMultipartContainer.Ticking>)TileEntityType.Builder.create(TileMultipartContainer.Ticking::new).build(null).setRegistryName(MODID + ":multipart.ticking");
+        event.getRegistry().registerAll(TYPE, TICKING_TYPE);
     }
 
     public <T> void initAPI() throws Exception {
-        ReflectionHelper.setPrivateValue(MultipartHelper.class, null, //
+        ObfuscationReflectionHelper.setPrivateValue(MultipartHelper.class, null, //
                 (BiFunction<World, BlockPos, IMultipartContainer>) TileMultipartContainer::createTileFromWorldInfo,
                 "createTileFromWorldInfo");
-        ReflectionHelper.setPrivateValue(MultipartHelper.class, null, //
+        ObfuscationReflectionHelper.setPrivateValue(MultipartHelper.class, null, //
                 (BiFunction<World, BlockPos, IMultipartContainer>) TileMultipartContainer::createTile, "createTile");
-        ReflectionHelper.setPrivateValue(MultipartHelper.class, null, //
+        ObfuscationReflectionHelper.setPrivateValue(MultipartHelper.class, null, //
                 (Function<Block, IMultipart>) MultipartRegistry.INSTANCE::getPart, "getPart");
 
-        ReflectionHelper.setPrivateValue(MultipartCapabilityHelper.class, null, //
+        ObfuscationReflectionHelper.setPrivateValue(MultipartCapabilityHelper.class, null, //
                 (BiConsumer<Capability<T>, Function<List<T>, T>>) CapabilityJoiner::registerCapabilityJoiner,
                 "registerJoiner");
 
@@ -186,8 +162,8 @@ public class MCMultiPart {
                 .unreflect(SlotRegistry.class.getMethod("viewContainer", ISlottedContainer.class, Function.class,
                         Function.class, Object.class, boolean.class, EnumEdgeSlot.class, EnumFacing.class))
                 .bindTo(SlotRegistry.INSTANCE);
-        ReflectionHelper.setPrivateValue(SlotUtil.class, null, viewSide, "viewSide");
-        ReflectionHelper.setPrivateValue(SlotUtil.class, null, viewEdge, "viewEdge");
+        ObfuscationReflectionHelper.setPrivateValue(SlotUtil.class, null, viewSide, "viewSide");
+        ObfuscationReflectionHelper.setPrivateValue(SlotUtil.class, null, viewEdge, "viewEdge");
     }
 
 }

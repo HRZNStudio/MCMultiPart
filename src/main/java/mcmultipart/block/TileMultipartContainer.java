@@ -24,20 +24,25 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.*;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.model.data.IModelData;
+import net.minecraftforge.client.model.data.ModelDataMap;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.GameData;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class TileMultipartContainer extends TileEntity implements IMultipartContainer {
 
@@ -46,15 +51,27 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     private Map<IPartSlot, NBTTagCompound> missingParts;
     private World loadingWorld;
 
-    private TileMultipartContainer(World world, BlockPos pos) {
-        super();
+    private TileMultipartContainer(TileEntityType tileEntityType, World world, BlockPos pos) {
+        super(tileEntityType);
         setWorld(world);
         setPos(pos);
         isInWorld = false;
     }
+    private TileMultipartContainer(World world, BlockPos pos) {
+        this(MCMultiPart.TYPE, world,pos);
+    }
 
+    @Nonnull
+    @Override
+    public IModelData getModelData() {
+        return new ModelDataMap.Builder().withInitial(BlockMultipartContainer.PROPERTY_INFO, parts.values().stream().map(part -> part.getInfo(world, pos)).collect(Collectors.toList())).build();
+    }
+
+    public TileMultipartContainer(TileEntityType type) {
+        super(type);
+    }
     public TileMultipartContainer() {
-        super();
+        super(MCMultiPart.TYPE);
     }
 
     // Just make a tile. Not sure why this needs the world and position, but apparently it does...
@@ -548,10 +565,11 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         private final Set<ITickable> tickingParts = Collections.newSetFromMap(new WeakHashMap<>());
 
         private Ticking(World world, BlockPos pos) {
-            super(world, pos);
+            super(MCMultiPart.TICKING_TYPE, world, pos);
         }
 
         public Ticking() {
+            super(MCMultiPart.TICKING_TYPE);
         }
 
         @Override

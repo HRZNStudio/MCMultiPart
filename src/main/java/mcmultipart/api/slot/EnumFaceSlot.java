@@ -2,6 +2,7 @@ package mcmultipart.api.slot;
 
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.registries.ForgeRegistryEntry;
 
 public enum EnumFaceSlot implements IPartSlot, IPartSlot.IFaceSlot {
 
