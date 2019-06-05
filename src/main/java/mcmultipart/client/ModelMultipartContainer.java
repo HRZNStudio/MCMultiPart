@@ -43,7 +43,6 @@ public class ModelMultipartContainer implements IBakedModel {
                             .getQuads(i.getExtendedState(), side, rand).stream() // Stream quads
                             .map(q -> tint(i, q))) // Tint quads
                     .collect(Collectors.toList());
-
         }
         return Collections.emptyList();
     }

@@ -5,6 +5,7 @@ import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.multipart.IMultipartTile;
 import mcmultipart.api.multipart.MultipartHelper;
 import mcmultipart.api.slot.IPartSlot;
+import mcmultipart.multipart.PartInfo;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
@@ -64,6 +65,8 @@ public class ItemBlockMultipart extends ItemBlock {
                                   IBlockPlacementLogic blockLogic, IPartPlacementLogic partLogic) {
         BlockItemUseContext blockContext = new BlockItemUseContext(context);
         IBlockState state = stateProvider.getStateForPlacement(blockContext);
+        if(state==null)
+            return false;
         VoxelShape shape = state.getCollisionShape(context.getWorld(), context.getPos());
         if ((shape.isEmpty() || context.getWorld().checkNoEntityCollision(null, shape.withOffset(context.getPos().getX(), context.getPos().getY(), context.getPos().getZ())))
                 && blockLogic.place(blockContext, state)) {

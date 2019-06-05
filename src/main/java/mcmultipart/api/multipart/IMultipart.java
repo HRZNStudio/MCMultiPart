@@ -4,6 +4,7 @@ import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.ref.MCMPCapabilities;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.world.IWorldView;
+import mcmultipart.multipart.PartInfo;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
@@ -20,6 +21,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
@@ -279,6 +281,10 @@ public interface IMultipart {
     }
 
     default void dropPartAsItemWithChance(IPartInfo part, float chance, int fortune) {
-        part.getState().getBlock().dropBlockAsItemWithChance(part.getState(), part.getActualWorld(), part.getPartPos(), chance, fortune);
+        part.getState().getBlock().dropBlockAsItemWithChance(part.getState(), part.getPartWorld(), part.getPartPos(), chance, fortune);
+    }
+
+    default RayTraceResult getRayTraceResult(PartInfo info, Vec3d start, Vec3d end, RayTraceResult original) {
+        return info.getPart().getBlock().getRayTraceResult(info.getState(), info.getPartWorld(), info.getPartPos(), start, end, original);
     }
 }

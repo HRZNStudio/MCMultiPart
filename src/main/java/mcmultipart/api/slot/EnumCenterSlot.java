@@ -1,41 +1,20 @@
 package mcmultipart.api.slot;
 
+import lombok.experimental.Delegate;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 
-public enum EnumCenterSlot implements IPartSlot, IPartSlot.IFaceSlot {
+public enum EnumCenterSlot {
+    CENTER(new PartSlot.CenterSlot());
 
-    CENTER;
+    @Delegate
+    private final PartSlot.CenterSlot slot;
 
-    private final ResourceLocation name;
-
-    private EnumCenterSlot() {
-        this.name = new ResourceLocation("mcmultipart", name().toLowerCase());
+    EnumCenterSlot(PartSlot.CenterSlot slot) {
+        this.slot = slot;
     }
 
-    @Override
-    public ResourceLocation getRegistryName() {
-        return this.name;
+    public PartSlot.CenterSlot getSlot() {
+        return slot;
     }
-
-    @Override
-    public EnumSlotAccess getFaceAccess(EnumFacing face) {
-        return EnumSlotAccess.MERGE;
-    }
-
-    @Override
-    public int getFaceAccessPriority(EnumFacing face) {
-        return -100;
-    }
-
-    @Override
-    public EnumSlotAccess getEdgeAccess(EnumEdgeSlot edge, EnumFacing face) {
-        return EnumSlotAccess.NONE;
-    }
-
-    @Override
-    public int getEdgeAccessPriority(EnumEdgeSlot edge, EnumFacing face) {
-        return 0;
-    }
-
 }

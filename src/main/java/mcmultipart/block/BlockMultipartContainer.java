@@ -23,21 +23,27 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.*;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.model.data.ModelProperty;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("deprecation")
 public class BlockMultipartContainer extends Block implements IMultipartContainerBlock {
@@ -52,7 +58,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         setDefaultState(getDefaultState().with(PROPERTY_TICKING, true));
     }
 
-    public static Optional<TileMultipartContainer> getTile(IWorldReader world, BlockPos pos) {
+    public static Optional<TileMultipartContainer> getTile(IBlockReader world, BlockPos pos) {
         TileEntity te = world.getTileEntity(pos);
         return te != null && te instanceof TileMultipartContainer ? Optional.of((TileMultipartContainer) te) : Optional.empty();
     }
@@ -78,22 +84,23 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //                                      Entity entity, boolean unknown) {
 //        forEach(world, pos, i -> i.getPart().addCollisionBoxToList(i, entityBox, collidingBoxes, entity, unknown));
 //    }
-//
-//    @Override
-//    public RayTraceResult collisionRayTrace(IBlockState state, World world, BlockPos pos, Vec3d start, Vec3d end) {
-//        Optional<TileMultipartContainer> te = getTile(world, pos);
-//        return te.map(t -> t.getParts().values()//
-//                .stream()//
-//                .map(i -> Pair.of(i, i.getPart().collisionRayTrace(i, start, end)))//
-//                .filter(p -> p.getValue() != null)//
-//                .min(Comparator.comparingDouble(hit -> hit.getValue().hitVec.squareDistanceTo(start)))//
-//                .map(p -> {
-//                    RayTraceResult hit = new RayTraceResult(p.getValue().hitVec, p.getValue().sideHit, p.getValue().getBlockPos());
-//                    hit.hitInfo = p.getValue();
-//                    hit.subHit = MCMultiPart.slotRegistry.getID(p.getKey().getSlot());
-//                    return hit;
-//                }).orElse(null)).orElse(null);
-//    }
+
+    @Nullable
+    @Override
+    public RayTraceResult getRayTraceResult(IBlockState state, World world, BlockPos pos, Vec3d start, Vec3d end, RayTraceResult original) {
+        Optional<TileMultipartContainer> te = getTile(world, pos);
+        return te.map(t -> t.getParts().values()//
+                .stream()//
+                .map(i -> Pair.of(i, i.getPart().getRayTraceResult(i, start, end, original)))
+                .filter(p -> p.getValue() != null)//
+                .min(Comparator.comparingDouble(hit -> hit.getValue().hitVec.squareDistanceTo(start)))
+                .map(p -> {
+                    RayTraceResult hit = new RayTraceResult(p.getValue().hitVec, p.getValue().sideHit, p.getValue().getBlockPos());
+                    hit.hitInfo = p.getValue();
+                    hit.subHit = MCMultiPart.slotRegistry.getID(p.getKey().getSlot());
+                    return hit;
+                }).orElse(null)).orElse(original);
+    }
 
     @Override
     public boolean isFullCube(IBlockState state) {
@@ -157,9 +164,9 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //        forEach(world, pos, i -> i.getPart().randomDisplayTick(i, rand));
 //    }
 
-    //    @Override
-//    @OnlyIn(Side.CLIENT)
-    public boolean addDestroyEffects(World world, BlockPos pos, ParticleManager manager) {
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public boolean addDestroyEffects(IBlockState worldState, World world, BlockPos pos, ParticleManager manager) {
         Pair<Vec3d, Vec3d> vectors = RayTraceHelper.getRayTraceVectors(MCMultiPart.proxy.getPlayer());
         RayTraceResult hit = collisionRayTrace(getDefaultState(), world, pos, vectors.getLeft(), vectors.getRight());
         if (hit != null) {
@@ -184,7 +191,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
     }
 
     @Override
-//    @OnlyIn(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public boolean addHitEffects(IBlockState mpState, World world, RayTraceResult hit, ParticleManager manager) {
         if (hit != null) {
             BlockPos pos = hit.getBlockPos();
@@ -237,8 +244,8 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return true;
     }
 
-    //    @Override
-    public boolean canConnectRedstone(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
+    @Override
+    public boolean canConnectRedstone(IBlockState state, IBlockReader world, BlockPos pos, @Nullable EnumFacing side) {
         if (side == null) {
             return false;
         }
@@ -248,8 +255,8 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
                 .orElse(false);
     }
 
-    //    @Override
-    public int getWeakPower(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
+    @Override
+    public int getWeakPower(IBlockState state, IBlockReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return 0;
         }
@@ -257,8 +264,8 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
                 l -> l.stream().max(Integer::compare).get(), 0, true, side.getOpposite())).orElse(0);
     }
 
-    //    @Override
-    public int getStrongPower(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
+    @Override
+    public int getStrongPower(IBlockState state, IBlockReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return 0;
         }
@@ -300,21 +307,22 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return max(world, pos, i -> i.getPart().getComparatorInputOverride(i));
     }
 
-//    @Override
-//    public List<ItemStack> getDrops(IWorldReader world, BlockPos pos, IBlockState state, int fortune) {
-//        return getTile(world, pos).map(t -> t.getParts().values().stream().map(i -> i.getPart().getDrops(i.wrapAsNeeded(world), pos, i, fortune))
-//                .flatMap(List::stream).collect(Collectors.toList())).orElse(Collections.emptyList());
-//    }
+    @Override
+    public void getDrops(IBlockState state, NonNullList<ItemStack> drops, World world, BlockPos pos, int fortune) {
+        drops.addAll(getTile(world, pos).map(t -> t.getParts().values().stream().map(i -> i.getPart().getDrops(i.wrapAsNeeded(world), pos, i, fortune))
+                .flatMap(List::stream).collect(Collectors.toList())).orElse(Collections.emptyList()));
+    }
 
-    //    @Override
-//    public float getExplosionResistance(World world, BlockPos pos, Entity exploder, Explosion explosion) {
-//        return addF(world, pos, i -> i.getPart().getExplosionResistance(i, exploder, explosion), Float.POSITIVE_INFINITY);
-//    }
-//
-//    @Override
-//    public float getEnchantPowerBonus(World world, BlockPos pos) {
-//        return addF(world, pos, i -> i.getPart().getEnchantPowerBonus(i), Float.POSITIVE_INFINITY);
-//    }
+    @Override
+    public float getEnchantPowerBonus(IBlockState state, IWorldReader world, BlockPos pos) {
+        return addF(world, pos, i->i.getPart().getEnchantPowerBonus(i), Float.POSITIVE_INFINITY);
+    }
+
+    @Override
+    public float getExplosionResistance(IBlockState state, IWorldReader world, BlockPos pos, @Nullable Entity exploder, Explosion explosion) {
+        return addF(world, pos, i -> i.getPart().getExplosionResistance(i, exploder, explosion), Float.POSITIVE_INFINITY);
+    }
+
 //
 //    @Override
 //    public int getFireSpreadSpeed(IWorldReader world, BlockPos pos, EnumFacing face) {
@@ -353,11 +361,11 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return super.getPackedLightmapCoords(state, world, pos);// TODO: Maybe?
     }
 
-    //    @Override
-    public ItemStack getPickBlock(IBlockState state, RayTraceResult hit, World world, BlockPos pos, EntityPlayer player) {
-        if (hit != null) {
-            return getTile(world, pos).map(t -> t.get(MCMultiPart.slotRegistry.getValue(hit.subHit))).filter(Optional::isPresent)
-                    .map(o -> o.get().getPart().getPickPart(o.get(), (RayTraceResult) hit.hitInfo, player)).orElse(ItemStack.EMPTY);
+    @Override
+    public ItemStack getPickBlock(IBlockState state, RayTraceResult target, IBlockReader world, BlockPos pos, EntityPlayer player) {
+        if(target != null) {
+            return getTile(world, pos).map(t -> t.get(MCMultiPart.slotRegistry.getValue(target.subHit))).filter(Optional::isPresent)
+                    .map(o -> o.get().getPart().getPickPart(o.get(),(RayTraceResult) target.hitInfo, player)).orElse(ItemStack.EMPTY);
         }
         return ItemStack.EMPTY;
     }
@@ -377,7 +385,6 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
     public SoundType getSoundType(IBlockState state, World world, BlockPos pos, Entity entity) {
         return super.getSoundType(state, world, pos, entity);// TODO: Maybe? Needs a PR with the type of sound requested... >_>
     }
-
 //    @Override
 //    public boolean getTickRandomly() {
 //        return true;

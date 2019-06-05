@@ -9,6 +9,7 @@ import mcmultipart.api.multipart.MultipartHelper;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.world.IWorldView;
 import mcmultipart.block.TileMultipartContainer;
+import mcmultipart.util.MCMPBlockReaderWrapper;
 import mcmultipart.util.MCMPWorldReaderWrapper;
 import mcmultipart.util.MCMPWorldWrapper;
 import net.minecraft.block.state.IBlockState;
@@ -19,6 +20,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
@@ -232,6 +234,16 @@ public final class PartInfo implements IPartInfo {
                 return this.world;
             } else {
                 return new MCMPWorldReaderWrapper(world, this, view);
+            }
+        }
+        return world;
+    }
+    public IBlockReader wrapAsNeeded(IBlockReader world) {
+        if (view != null) {
+            if (world == this.world || world == this.world.getActualWorld()) {
+                return this.world;
+            } else {
+                return new MCMPBlockReaderWrapper(world, this, view);
             }
         }
         return world;

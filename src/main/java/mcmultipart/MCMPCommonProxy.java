@@ -5,7 +5,9 @@ import mcmultipart.api.item.ItemBlockMultipart;
 import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.multipart.MultipartRegistry;
 import mcmultipart.multipart.MultipartRegistry.WrappedBlock;
+import mcmultipart.multipart.PartInfo;
 import mcmultipart.network.MultipartNetworkHandler;
+import mcmultipart.util.MCMPWorldWrapper;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.BlockItemUseContext;
@@ -61,8 +63,7 @@ public class MCMPCommonProxy {
     @SubscribeEvent
     public void onPlayerRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         EntityPlayer player = event.getEntityPlayer();
-        if (event.getHitVec() == null || event.getWorld() == null || event.getPos() == null || event.getHand() == null || event.getFace() == null
-                || player == null) {
+        if (event.getHitVec() == null || event.getWorld() == null || event.getFace() == null || player == null) {
             return;
         }
         ItemStack stack = player.getHeldItem(event.getHand());
@@ -91,7 +92,6 @@ public class MCMPCommonProxy {
         {
             context.getWorld().captureBlockSnapshots = true;
         }
-
         EnumActionResult ret = ItemBlockMultipart.place(context, info.getKey().getPlacementInfo(), info.getValue(), //
                 info.getKey().getBlockPlacementLogic(), info.getKey().getPartPlacementLogic());
         context.getWorld().captureBlockSnapshots = false;

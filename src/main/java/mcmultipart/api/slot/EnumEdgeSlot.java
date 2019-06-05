@@ -3,7 +3,6 @@ package mcmultipart.api.slot;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import lombok.experimental.Delegate;
-import mcmultipart.slot.PartSlot;
 import net.minecraft.util.EnumFacing;
 
 public enum EnumEdgeSlot {

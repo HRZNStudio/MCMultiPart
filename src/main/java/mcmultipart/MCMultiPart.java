@@ -85,7 +85,7 @@ public class MCMultiPart {
         addons = getAnnotatedClasses(MCMPAddon.class).stream().map(aClass -> {
             try {
                 return aClass.getConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }).map(IMCMPAddon.class::cast).collect(Collectors.toList());
@@ -166,8 +166,8 @@ public class MCMultiPart {
     public void onSlotRegistryInit(RegistryEvent.Register<IPartSlot> event) {
         Stream.of(EnumFaceSlot.VALUES).map(EnumFaceSlot::getSlot).forEach(event.getRegistry()::register);
         Stream.of(EnumEdgeSlot.VALUES).map(EnumEdgeSlot::getSlot).forEach(event.getRegistry()::register);
-//        Stream.of(EnumCornerSlot.VALUES).map(EnumCornerSlot::getSlot).forEach(event.getRegistry()::register);
-//        Stream.of(EnumCenterSlot.VALUES).map(EnumCenterSlot::getSlot).forEach(event.getRegistry()::register);
+        Stream.of(EnumCornerSlot.VALUES).map(EnumCornerSlot::getSlot).forEach(event.getRegistry()::register);
+        Stream.of(EnumCenterSlot.CENTER).map(EnumCenterSlot::getSlot).forEach(event.getRegistry()::register);
     }
 
     public void onBlockRegistryInit(RegistryEvent.Register<Block> event) {

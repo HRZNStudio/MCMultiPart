@@ -1,7 +1,6 @@
 package mcmultipart.api.slot;
 
 import lombok.experimental.Delegate;
-import mcmultipart.slot.PartSlot;
 import net.minecraft.util.EnumFacing;
 
 public enum EnumFaceSlot {
