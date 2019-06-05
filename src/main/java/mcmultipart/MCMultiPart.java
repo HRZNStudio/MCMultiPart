@@ -2,6 +2,7 @@ package mcmultipart;
 
 import com.google.common.base.Throwables;
 import mcmultipart.api.addon.IMCMPAddon;
+import mcmultipart.api.addon.MCMPAddon;
 import mcmultipart.api.container.IMultipartContainer;
 import mcmultipart.api.microblock.MicroMaterial;
 import mcmultipart.api.microblock.MicroblockType;
@@ -31,24 +32,30 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.forgespi.language.ModFileScanData;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.GameData;
 import net.minecraftforge.registries.RegistryBuilder;
 import org.apache.logging.log4j.Logger;
+import org.objectweb.asm.Type;
 
+import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Mod(MCMultiPart.MODID)
@@ -70,10 +77,35 @@ public class MCMultiPart {
     public static TileEntityType<TileMultipartContainer> TYPE;
     public static TileEntityType<TileMultipartContainer.Ticking> TICKING_TYPE;
 
-    private final List<IMCMPAddon> addons = new ArrayList<>();
+    private List<IMCMPAddon> addons;
 
+    private static List<Class> getAnnotatedClasses(Class<? extends Annotation> annotation) {
+        List<Class> classList = new ArrayList<>();
+        Type type = Type.getType(annotation);
+        for (ModFileScanData allScanDatum : ModList.get().getAllScanData()) {
+            for (ModFileScanData.AnnotationData allScanDatumAnnotation : allScanDatum.getAnnotations()) {
+                if (Objects.equals(allScanDatumAnnotation.getAnnotationType(), type)) {
+                    try {
+                        classList.add(Class.forName(allScanDatumAnnotation.getMemberName()));
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return classList;
+    }
+    
     public MCMultiPart() {
         MinecraftForge.EVENT_BUS.register(this);
+
+        addons=getAnnotatedClasses(MCMPAddon.class).stream().map(aClass -> {
+            try {
+                return aClass.getConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }).map(IMCMPAddon.class::cast).collect(Collectors.toList());
         proxy = DistExecutor.runForDist(() -> MCMPClientProxy::new, () -> MCMPCommonProxy::new);
 
         try {
