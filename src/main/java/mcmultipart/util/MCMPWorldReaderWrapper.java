@@ -14,10 +14,14 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraftforge.common.capabilities.CapabilityDispatcher;
+import net.minecraftforge.common.capabilities.CapabilityProvider;
+
+import javax.annotation.Nullable;
 
 public class MCMPWorldReaderWrapper implements IWorldReader, IMultipartBlockReader {
 
-    @Delegate(excludes = Ignore.class)
+    @Delegate(excludes = Ignore.class, types = {IWorldReader.class, IBlockReader.class})
     private final IWorldReader parent;
     private final PartInfo partInfo;
     private final IWorldView view;
@@ -51,5 +55,7 @@ public class MCMPWorldReaderWrapper implements IWorldReader, IMultipartBlockRead
     private interface Ignore {
         IBlockState getBlockState(BlockPos pos);
         TileEntity getTileEntity(BlockPos pos);
+        boolean areCapsCompatible(CapabilityProvider other);
+        boolean areCapsCompatible(@Nullable CapabilityDispatcher other);
     }
 }

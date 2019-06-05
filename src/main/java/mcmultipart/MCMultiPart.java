@@ -30,10 +30,12 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.GameData;
@@ -47,6 +49,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 @Mod(MCMultiPart.MODID)
 public class MCMultiPart {
@@ -79,27 +82,35 @@ public class MCMultiPart {
             throw Throwables.propagate(e);
         }
 
-        stateMap = GameData.getBlockStateIDMap();
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onRegistrySetup);
+        FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(Block.class,this::onBlockRegistryInit);
+        FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(IPartSlot.class, this::onSlotRegistryInit);
+        FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(TileEntityType.class, this::onTileRegistry);
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(event -> {
+            if(event instanceof FMLCommonSetupEvent) {
+                stateMap = GameData.getBlockStateIDMap();
 
-        CapabilityMultipartContainer.register();
-        CapabilityMultipartTile.register();
+                CapabilityMultipartContainer.register();
+                CapabilityMultipartTile.register();
 
-        MultipartCapabilityHelper.registerCapabilityJoiner(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, JoinedItemHandler::join);
+                MultipartCapabilityHelper.registerCapabilityJoiner(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, JoinedItemHandler::join);
 
-        MultipartNetworkHandler.init();
+                MultipartNetworkHandler.init();
 
-        MinecraftForge.EVENT_BUS.register(proxy);
-        proxy.preInit();
+                MinecraftForge.EVENT_BUS.register(proxy);
+                proxy.preInit();
 
-        addons.forEach(a -> a.registerParts(MultipartRegistry.INSTANCE));
+                addons.forEach(a -> a.registerParts(MultipartRegistry.INSTANCE));
 
-        MultipartRegistry.INSTANCE.computeBlocks();
-        SlotRegistry.INSTANCE.computeAccess();
-
-        proxy.init();
+                MultipartRegistry.INSTANCE.computeBlocks();
+                SlotRegistry.INSTANCE.computeAccess();
+            }
+            if(event instanceof FMLLoadCompleteEvent) {
+                proxy.init();
+            }
+        });
     }
 
-    @SubscribeEvent
     public void onRegistrySetup(RegistryEvent.NewRegistry event) {
         slotRegistry = (ForgeRegistry<IPartSlot>) new RegistryBuilder<IPartSlot>()//
                 .setName(new ResourceLocation(MODID, "slots"))//
@@ -115,26 +126,23 @@ public class MCMultiPart {
 
         microblockTypeRegistry = (ForgeRegistry<MicroblockType>) new RegistryBuilder<MicroblockType>()//
                 .setName(new ResourceLocation(MODID, "micro_type"))//
-                .setIDRange(0, Short.MAX_VALUE)//
-                .setType(MicroblockType.class)//
+                .setIDRange(0, Short.MAX_VALUE)
+                .setType(MicroblockType.class)
                 .create();
     }
 
-    @SubscribeEvent
     public void onSlotRegistryInit(RegistryEvent.Register<IPartSlot> event) {
-        event.getRegistry().registerAll(EnumFaceSlot.VALUES);
-        event.getRegistry().registerAll(EnumEdgeSlot.VALUES);
-        event.getRegistry().registerAll(EnumCornerSlot.VALUES);
-        event.getRegistry().registerAll(EnumCenterSlot.CENTER);
+        Stream.of(EnumFaceSlot.VALUES).map(EnumFaceSlot::getSlot).forEach(event.getRegistry()::register);
+        Stream.of(EnumEdgeSlot.VALUES).map(EnumEdgeSlot::getSlot).forEach(event.getRegistry()::register);
+//        Stream.of(EnumCornerSlot.VALUES).map(EnumCornerSlot::getSlot).forEach(event.getRegistry()::register);
+//        Stream.of(EnumCenterSlot.VALUES).map(EnumCenterSlot::getSlot).forEach(event.getRegistry()::register);
     }
 
-    @SubscribeEvent
     public void onBlockRegistryInit(RegistryEvent.Register<Block> event) {
         multipart = new BlockMultipartContainer();
         event.getRegistry().register(multipart.setRegistryName("multipart"));
     }
 
-    @SubscribeEvent
     public void onTileRegistry(RegistryEvent.Register<TileEntityType<?>> event) {
         TYPE=(TileEntityType<TileMultipartContainer>)TileEntityType.Builder.create(TileMultipartContainer::new).build(null).setRegistryName(MODID + ":multipart.nonticking");
         TICKING_TYPE=(TileEntityType<TileMultipartContainer.Ticking>)TileEntityType.Builder.create(TileMultipartContainer.Ticking::new).build(null).setRegistryName(MODID + ":multipart.ticking");

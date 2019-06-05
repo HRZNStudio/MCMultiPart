@@ -1,6 +1,7 @@
 package mcmultipart.capability;
 
 import mcmultipart.api.container.IMultipartContainer;
+import mcmultipart.block.TileMultipartContainer;
 import net.minecraft.nbt.INBTBase;
 import net.minecraft.util.EnumFacing;
 import net.minecraftforge.common.capabilities.Capability;
@@ -21,7 +22,7 @@ public class CapabilityMultipartContainer {
             @Override
             public void readNBT(Capability<IMultipartContainer> capability, IMultipartContainer instance, EnumFacing side, INBTBase nbt) {
             }
-        }, () -> null);
+        }, TileMultipartContainer::new);
     }
 
 }

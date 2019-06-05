@@ -17,17 +17,23 @@ import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockReader;
+import net.minecraft.world.IWorldReaderBase;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.IChunkProvider;
+import net.minecraftforge.common.capabilities.CapabilityDispatcher;
+import net.minecraftforge.common.capabilities.CapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
+
+import javax.annotation.Nullable;
 
 public class MCMPWorldWrapper extends World implements IMultipartWorld {
 
     private final PartInfo part;
     private final PartInfo partInfo;
     private final IWorldView view;
-    @Delegate(excludes = Ignore.class)
+    @Delegate(excludes = Ignore.class, types = {World.class, IWorldReaderBase.class})
     private final World world;
 
     public MCMPWorldWrapper(PartInfo part, PartInfo partInfo, IWorldView view) {
@@ -207,6 +213,9 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
         void removeTileEntity(BlockPos pos);
 
         void markTileEntityForRemoval(TileEntity tile);
+
+        boolean areCapsCompatible(CapabilityProvider other);
+        boolean areCapsCompatible(@Nullable CapabilityDispatcher other);
     }
 
 }

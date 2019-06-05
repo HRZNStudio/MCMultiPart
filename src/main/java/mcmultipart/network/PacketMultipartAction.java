@@ -86,7 +86,7 @@ public class PacketMultipartAction extends Packet<PacketMultipartAction> {
     }
 
     @Override
-    public void fromBytes(PacketBuffer buf) throws Exception {
+    public void fromBytes(PacketBuffer buf) {
         changes.clear();
         int partsCount = buf.readUnsignedShort();
         BlockPos prevCoords = BlockPos.ORIGIN;
