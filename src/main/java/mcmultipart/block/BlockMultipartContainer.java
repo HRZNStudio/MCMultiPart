@@ -8,7 +8,6 @@ import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.slot.SlotUtil;
 import mcmultipart.multipart.PartInfo;
 import net.minecraft.block.Block;
-import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -158,7 +157,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //        forEach(world, pos, i -> i.getPart().randomDisplayTick(i, rand));
 //    }
 
-//    @Override
+    //    @Override
 //    @OnlyIn(Side.CLIENT)
     public boolean addDestroyEffects(World world, BlockPos pos, ParticleManager manager) {
         Pair<Vec3d, Vec3d> vectors = RayTraceHelper.getRayTraceVectors(MCMultiPart.proxy.getPlayer());
@@ -238,7 +237,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return true;
     }
 
-//    @Override
+    //    @Override
     public boolean canConnectRedstone(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return false;
@@ -249,7 +248,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
                 .orElse(false);
     }
 
-//    @Override
+    //    @Override
     public int getWeakPower(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return 0;
@@ -258,7 +257,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
                 l -> l.stream().max(Integer::compare).get(), 0, true, side.getOpposite())).orElse(0);
     }
 
-//    @Override
+    //    @Override
     public int getStrongPower(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return 0;
@@ -307,7 +306,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //                .flatMap(List::stream).collect(Collectors.toList())).orElse(Collections.emptyList());
 //    }
 
-//    @Override
+    //    @Override
 //    public float getExplosionResistance(World world, BlockPos pos, Entity exploder, Explosion explosion) {
 //        return addF(world, pos, i -> i.getPart().getExplosionResistance(i, exploder, explosion), Float.POSITIVE_INFINITY);
 //    }
@@ -354,7 +353,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return super.getPackedLightmapCoords(state, world, pos);// TODO: Maybe?
     }
 
-//    @Override
+    //    @Override
     public ItemStack getPickBlock(IBlockState state, RayTraceResult hit, World world, BlockPos pos, EntityPlayer player) {
         if (hit != null) {
             return getTile(world, pos).map(t -> t.get(MCMultiPart.slotRegistry.getValue(hit.subHit))).filter(Optional::isPresent)
@@ -363,7 +362,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return ItemStack.EMPTY;
     }
 
-//    @Override
+    //    @Override
     public float getPlayerRelativeBlockHardness(IBlockState state, EntityPlayer player, World world, BlockPos pos) {
         Pair<Vec3d, Vec3d> vectors = RayTraceHelper.getRayTraceVectors(player);
         RayTraceResult hit = collisionRayTrace(getDefaultState(), world, pos, vectors.getLeft(), vectors.getRight());
@@ -374,7 +373,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return 0;
     }
 
-//    @Override
+    //    @Override
     public SoundType getSoundType(IBlockState state, World world, BlockPos pos, Entity entity) {
         return super.getSoundType(state, world, pos, entity);// TODO: Maybe? Needs a PR with the type of sound requested... >_>
     }

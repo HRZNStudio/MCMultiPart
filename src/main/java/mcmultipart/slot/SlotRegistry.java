@@ -5,9 +5,7 @@ import mcmultipart.api.slot.EnumSlotAccess;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.slot.ISlottedContainer;
 import net.minecraft.util.EnumFacing;
-import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.registries.ForgeRegistry;
-import net.minecraftforge.registries.RegistryBuilder;
 import net.minecraftforge.registries.RegistryManager;
 
 import java.util.*;

@@ -31,6 +31,7 @@ public final class MultipartHelper {
     private static BiFunction<World, BlockPos, IMultipartContainer> createTileFromWorldInfo;
     private static BiFunction<World, BlockPos, IMultipartContainer> createTile;
     private static Function<Block, IMultipart> getPart;
+
     private MultipartHelper() {
     }
 
@@ -44,7 +45,7 @@ public final class MultipartHelper {
             return false;
         }
         IMultipartContainer container = containerOpt.orElseGet(() -> createTile.apply(world, pos));
-        if(container.getParts().isEmpty()) {
+        if (container.getParts().isEmpty()) {
             return false;
         }
 
@@ -119,7 +120,7 @@ public final class MultipartHelper {
         } else {
             IMultipart part = getPart.apply(state.getBlock());
             if (part != null) {
-                return LazyOptional.of(()->createTileFromWorldInfo.apply(world, pos));
+                return LazyOptional.of(() -> createTileFromWorldInfo.apply(world, pos));
             }
         }
         return LazyOptional.empty();

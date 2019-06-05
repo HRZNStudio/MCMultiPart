@@ -54,9 +54,9 @@ public abstract class MultipartAction {
             try {
                 Field f = null;
                 try {
-                    f=SPacketUpdateTileEntity.class.getDeclaredField("field_148860_e");
+                    f = SPacketUpdateTileEntity.class.getDeclaredField("field_148860_e");
                 } catch (Exception e) {
-                    f=SPacketUpdateTileEntity.class.getDeclaredField("nbt");
+                    f = SPacketUpdateTileEntity.class.getDeclaredField("nbt");
                 }
                 SPacketUpdateTileEntity$nbt = MethodHandles.lookup().unreflectGetter(f);
             } catch (Exception ex) {
@@ -75,6 +75,7 @@ public abstract class MultipartAction {
         public Change(BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound data) {
             super(TYPE, pos, slot, state, data);
         }
+
         public Change(IPartInfo info) {
             this(info.getPartPos(), info.getSlot(), info.getState(), info.getTile() != null ? getUpdateTag.apply(info.getTile().getPartUpdatePacket()) : null);
         }

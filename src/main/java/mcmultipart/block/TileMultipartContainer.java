@@ -57,19 +57,15 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         setPos(pos);
         isInWorld = false;
     }
-    private TileMultipartContainer(World world, BlockPos pos) {
-        this(MCMultiPart.TYPE, world,pos);
-    }
 
-    @Nonnull
-    @Override
-    public IModelData getModelData() {
-        return new ModelDataMap.Builder().withInitial(BlockMultipartContainer.PROPERTY_INFO, parts.values().stream().map(part -> part.getInfo(world, pos)).collect(Collectors.toList())).build();
+    private TileMultipartContainer(World world, BlockPos pos) {
+        this(MCMultiPart.TYPE, world, pos);
     }
 
     public TileMultipartContainer(TileEntityType type) {
         super(type);
     }
+
     public TileMultipartContainer() {
         super(MCMultiPart.TYPE);
     }
@@ -88,6 +84,12 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         container.add(info.getSlot(), info);
 
         return container;
+    }
+
+    @Nonnull
+    @Override
+    public IModelData getModelData() {
+        return new ModelDataMap.Builder().withInitial(BlockMultipartContainer.PROPERTY_INFO, parts.values().stream().map(part -> part.getInfo(world, pos)).collect(Collectors.toList())).build();
     }
 
     @Override
@@ -531,22 +533,22 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> capability, EnumFacing facing) {
         if (capability == MCMPCapabilities.MULTIPART_CONTAINER) {
-            return LazyOptional.of(()->this).cast();
+            return LazyOptional.of(() -> this).cast();
         }
         T val = SlotUtil
                 .viewContainer(this,
                         i -> {
-                    if(i.getTile() !=null) {
-                        LazyOptional<T> t = i.getTile().getPartCapability(capability, facing);
-                        if(t.isPresent()) {
-                            return t.orElseThrow(NullPointerException::new);
-                        }
-                    }
-                    return null;
+                            if (i.getTile() != null) {
+                                LazyOptional<T> t = i.getTile().getPartCapability(capability, facing);
+                                if (t.isPresent()) {
+                                    return t.orElseThrow(NullPointerException::new);
+                                }
+                            }
+                            return null;
                         },
                         l -> CapabilityJoiner.join(capability, l), null, true, facing);
         if (val != null) {
-            return LazyOptional.of(()->val);
+            return LazyOptional.of(() -> val);
         }
         return super.getCapability(capability, facing);
     }

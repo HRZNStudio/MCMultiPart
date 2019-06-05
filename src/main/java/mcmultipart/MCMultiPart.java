@@ -79,27 +79,10 @@ public class MCMultiPart {
 
     private List<IMCMPAddon> addons;
 
-    private static List<Class> getAnnotatedClasses(Class<? extends Annotation> annotation) {
-        List<Class> classList = new ArrayList<>();
-        Type type = Type.getType(annotation);
-        for (ModFileScanData allScanDatum : ModList.get().getAllScanData()) {
-            for (ModFileScanData.AnnotationData allScanDatumAnnotation : allScanDatum.getAnnotations()) {
-                if (Objects.equals(allScanDatumAnnotation.getAnnotationType(), type)) {
-                    try {
-                        classList.add(Class.forName(allScanDatumAnnotation.getMemberName()));
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
-        return classList;
-    }
-    
     public MCMultiPart() {
         MinecraftForge.EVENT_BUS.register(this);
 
-        addons=getAnnotatedClasses(MCMPAddon.class).stream().map(aClass -> {
+        addons = getAnnotatedClasses(MCMPAddon.class).stream().map(aClass -> {
             try {
                 return aClass.getConstructor().newInstance();
             } catch (InstantiationException | IllegalAccessException e) {
@@ -115,11 +98,11 @@ public class MCMultiPart {
         }
 
         FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onRegistrySetup);
-        FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(Block.class,this::onBlockRegistryInit);
+        FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(Block.class, this::onBlockRegistryInit);
         FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(IPartSlot.class, this::onSlotRegistryInit);
         FMLJavaModLoadingContext.get().getModEventBus().addGenericListener(TileEntityType.class, this::onTileRegistry);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(event -> {
-            if(event instanceof FMLCommonSetupEvent) {
+            if (event instanceof FMLCommonSetupEvent) {
                 stateMap = GameData.getBlockStateIDMap();
 
                 CapabilityMultipartContainer.register();
@@ -137,10 +120,27 @@ public class MCMultiPart {
                 MultipartRegistry.INSTANCE.computeBlocks();
                 SlotRegistry.INSTANCE.computeAccess();
             }
-            if(event instanceof FMLLoadCompleteEvent) {
+            if (event instanceof FMLLoadCompleteEvent) {
                 proxy.init();
             }
         });
+    }
+
+    private static List<Class> getAnnotatedClasses(Class<? extends Annotation> annotation) {
+        List<Class> classList = new ArrayList<>();
+        Type type = Type.getType(annotation);
+        for (ModFileScanData allScanDatum : ModList.get().getAllScanData()) {
+            for (ModFileScanData.AnnotationData allScanDatumAnnotation : allScanDatum.getAnnotations()) {
+                if (Objects.equals(allScanDatumAnnotation.getAnnotationType(), type)) {
+                    try {
+                        classList.add(Class.forName(allScanDatumAnnotation.getMemberName()));
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return classList;
     }
 
     public void onRegistrySetup(RegistryEvent.NewRegistry event) {
@@ -176,8 +176,8 @@ public class MCMultiPart {
     }
 
     public void onTileRegistry(RegistryEvent.Register<TileEntityType<?>> event) {
-        TYPE=(TileEntityType<TileMultipartContainer>)TileEntityType.Builder.create(TileMultipartContainer::new).build(null).setRegistryName(MODID + ":multipart.nonticking");
-        TICKING_TYPE=(TileEntityType<TileMultipartContainer.Ticking>)TileEntityType.Builder.create(TileMultipartContainer.Ticking::new).build(null).setRegistryName(MODID + ":multipart.ticking");
+        TYPE = (TileEntityType<TileMultipartContainer>) TileEntityType.Builder.create(TileMultipartContainer::new).build(null).setRegistryName(MODID + ":multipart.nonticking");
+        TICKING_TYPE = (TileEntityType<TileMultipartContainer.Ticking>) TileEntityType.Builder.create(TileMultipartContainer.Ticking::new).build(null).setRegistryName(MODID + ":multipart.ticking");
         event.getRegistry().registerAll(TYPE, TICKING_TYPE);
     }
 

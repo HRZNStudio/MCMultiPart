@@ -12,7 +12,7 @@ public abstract class PartSlot extends ForgeRegistryEntry<IPartSlot> implements 
 
         public FaceSlot(EnumFacing facing) {
             this.facing = facing;
-            setRegistryName("face_"+facing.name().toLowerCase());
+            setRegistryName("face_" + facing.name().toLowerCase());
         }
 
         public EnumFacing getFacing() {
@@ -47,7 +47,7 @@ public abstract class PartSlot extends ForgeRegistryEntry<IPartSlot> implements 
         private final EnumFacing face1, face2;
 
         public EdgeSlot(String name, EnumFacing.Axis axis, EnumFacing face1, EnumFacing face2) {
-            setRegistryName("edge_"+name.toLowerCase());
+            setRegistryName("edge_" + name.toLowerCase());
             this.axis = axis;
             this.face1 = face1;
             this.face2 = face2;

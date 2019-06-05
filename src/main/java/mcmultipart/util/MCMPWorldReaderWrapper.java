@@ -5,15 +5,11 @@ import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.world.IMultipartBlockReader;
 import mcmultipart.api.world.IWorldView;
 import mcmultipart.multipart.PartInfo;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.fluid.IFluidState;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
 import net.minecraftforge.common.capabilities.CapabilityProvider;
 
@@ -54,8 +50,11 @@ public class MCMPWorldReaderWrapper implements IWorldReader, IMultipartBlockRead
 
     private interface Ignore {
         IBlockState getBlockState(BlockPos pos);
+
         TileEntity getTileEntity(BlockPos pos);
+
         boolean areCapsCompatible(CapabilityProvider other);
+
         boolean areCapsCompatible(@Nullable CapabilityDispatcher other);
     }
 }

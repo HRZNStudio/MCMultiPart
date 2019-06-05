@@ -47,7 +47,7 @@ public class MCMPCommonProxy {
 
     public void scheduleTick(Runnable runnable, Dist side) {
         if (side == Dist.DEDICATED_SERVER) {
-            ((MinecraftServer)LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER)).addScheduledTask(runnable);
+            ((MinecraftServer) LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER)).addScheduledTask(runnable);
         }
     }
 
