@@ -14,7 +14,7 @@ plugins {
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 
-def BUILD_NUMBER = System.getenv("BUILD_NUMBER") ?: "2.1.24"
+def BUILD_NUMBER = System.getenv("BUILD_NUMBER") ?: "0.0.0"
 version = "${BUILD_NUMBER}"
 group = 'com.hrznstudio'
 archivesBaseName = 'mcmultipart'
