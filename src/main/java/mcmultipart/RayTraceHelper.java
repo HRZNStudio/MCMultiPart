@@ -1,11 +1,10 @@
 package mcmultipart;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class RayTraceHelper {
 
@@ -21,10 +20,9 @@ public class RayTraceHelper {
         float f6 = f1 * f3;
         double d3 = 5.0D;
         if (player instanceof EntityPlayerMP) {
-            d3 = ((EntityPlayerMP) player).interactionManager.getBlockReachDistance();
+            d3 = player.getAttribute(EntityPlayer.REACH_DISTANCE).getValue() + 1;
         }
-        Vec3d end = start.addVector(f5 * d3, f4 * d3, f6 * d3);
+        Vec3d end = start.add(f5 * d3, f4 * d3, f6 * d3);
         return Pair.of(start, end);
     }
-
 }

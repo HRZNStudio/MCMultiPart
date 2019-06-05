@@ -1,13 +1,6 @@
 package mcmultipart.multipart;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Predicate;
-
-import org.apache.commons.lang3.tuple.Pair;
-
 import com.google.common.base.Preconditions;
-
 import mcmultipart.api.addon.IWrappedBlock;
 import mcmultipart.api.item.ItemBlockMultipart;
 import mcmultipart.api.item.ItemBlockMultipart.IBlockPlacementInfo;
@@ -21,6 +14,11 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fml.common.registry.GameRegistry;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Predicate;
 
 public enum MultipartRegistry implements IMultipartRegistry {
     INSTANCE;

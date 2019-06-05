@@ -2,9 +2,8 @@ package mcmultipart.api.world;
 
 import net.minecraft.world.World;
 
-public interface IMultipartWorld extends IMultipartBlockAccess {
+public interface IMultipartWorld extends IMultipartBlockReader {
 
-    @Override
     public World getActualWorld();
 
 }

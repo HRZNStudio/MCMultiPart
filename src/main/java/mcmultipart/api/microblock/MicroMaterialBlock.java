@@ -1,14 +1,12 @@
 package mcmultipart.api.microblock;
 
-import java.util.Optional;
-
-import javax.annotation.Nullable;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockRenderLayer;
@@ -16,9 +14,12 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+
+import javax.annotation.Nullable;
+import java.util.Optional;
 
 @SuppressWarnings("deprecation")
 public class MicroMaterialBlock extends MicroMaterial {
@@ -28,8 +29,7 @@ public class MicroMaterialBlock extends MicroMaterial {
     private final float hardness;
 
     public MicroMaterialBlock(IBlockState state) {
-        this(state,
-                ((Float) ReflectionHelper.getPrivateValue(Block.class, state.getBlock(), "field_149782_v", "blockHardness")).floatValue());
+        this(state, ObfuscationReflectionHelper.getPrivateValue(Block.class, state.getBlock(), "field_149782_v"));
     }
 
     public MicroMaterialBlock(IBlockState state, float hardness) {
@@ -43,22 +43,21 @@ public class MicroMaterialBlock extends MicroMaterial {
         this.hardness = hardness;
         this.delegate = this instanceof IMicroMaterialDelegate ? Optional.of((IMicroMaterialDelegate) this)
                 : state instanceof IMicroMaterialDelegate ? Optional.of((IMicroMaterialDelegate) state)
-                        : state.getBlock() instanceof IMicroMaterialDelegate ? Optional.of((IMicroMaterialDelegate) state.getBlock())
-                                : Optional.empty();
+                : state.getBlock() instanceof IMicroMaterialDelegate ? Optional.of((IMicroMaterialDelegate) state.getBlock())
+                : Optional.empty();
         ResourceLocation blockName = state.getBlock().getRegistryName();
-        setRegistryName(new ResourceLocation(blockName.getResourceDomain(),
-                blockName.getResourcePath() + "." + state.getBlock().getMetaFromState(state)));
+        setRegistryName(new ResourceLocation(blockName.getNamespace(), blockName.getPath()));
     }
 
     @Override
     public String getLocalizedName() {
-        return item != null ? item.getItemStackDisplayName(new ItemStack(item, 1, state.getBlock().damageDropped(state)))
-                : state.getBlock().getLocalizedName();
+        return item != null ? item.getDisplayName(new ItemStack(item, 1)).getFormattedText()
+                : state.getBlock().getTranslationKey(); //TODO: Local
     }
 
     @Override
     public boolean isSolid() {
-        return state.isFullBlock();
+        return state.isFullCube();
     }
 
     @Override
@@ -78,7 +77,7 @@ public class MicroMaterialBlock extends MicroMaterial {
 
     @Override
     public ItemStack getStack() {
-        return new ItemStack(item, 1, state.getBlock().damageDropped(state));
+        return new ItemStack(item, 1);
     }
 
     @Override
@@ -92,20 +91,18 @@ public class MicroMaterialBlock extends MicroMaterial {
     }
 
     @Override
-    public IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ,
-            EntityLivingBase placer, EnumHand hand) {
-        return state.getBlock().getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, state.getBlock().getMetaFromState(state), placer,
-                hand);
+    public IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, EntityLivingBase placer, EnumHand hand) {
+        return state.getBlock().getStateForPlacement(new BlockItemUseContext(world, placer instanceof EntityPlayer ? (EntityPlayer) placer : null, placer.getHeldItem(hand), pos, facing, hitX, hitY, hitZ));
     }
 
     @Override
-    public IBlockState getActualState(IBlockAccess world, BlockPos pos, IBlockState state) {
-        return state.getActualState(world, pos);
+    public IBlockState getActualState(IWorldReader world, BlockPos pos, IBlockState state) {
+        return state;
     }
 
     @Override
-    public IBlockState getExtendedState(IBlockAccess world, BlockPos pos, IBlockState state) {
-        return state.getBlock().getExtendedState(state, world, pos);
+    public IBlockState getExtendedState(IWorldReader world, BlockPos pos, IBlockState state) {
+        return state.getExtendedState(world, pos);
     }
 
     @Override

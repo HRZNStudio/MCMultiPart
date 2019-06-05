@@ -4,14 +4,12 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
+import net.minecraft.world.chunk.ChunkSection;
 
 public class WorldExt {
-    private static MethodHandle Chunk$storageArrays = findGetter(Chunk.class, "storageArrays", "field_76652_q");
+
+    private WorldExt() {
+    }
 
     /**
      * Workaround that is World#setBlockState but without calling Block#breakBlock on the old block
@@ -28,13 +26,13 @@ public class WorldExt {
      */
     public static void setBlockStateHack(World self, BlockPos pos, IBlockState state, int flags) {
         try {
-            Chunk chunk = self.getChunkFromBlockCoords(pos);
+            Chunk chunk = self.getChunk(pos);
 
             int x = pos.getX() & 15;
             int y = pos.getY() & 15;
             int z = pos.getZ() & 15;
-            ExtendedBlockStorage[] storageArrays = (ExtendedBlockStorage[]) Chunk$storageArrays.invoke(chunk);
-            ExtendedBlockStorage storage = storageArrays[pos.getY() >> 4];
+            ChunkSection[] storageArrays = chunk.getSections();
+            ChunkSection storage = storageArrays[pos.getY() >> 4];
             if (storage != null) storage.set(x, y, z, state);
         } catch (Throwable e) { // Chunk$storageArrays.invoke throws Throwable
             e.printStackTrace();
@@ -42,15 +40,4 @@ public class WorldExt {
 
         self.setBlockState(pos, state, flags);
     }
-
-    private static MethodHandle findGetter(Class<?> clazz, String... names) {
-        try {
-            return MethodHandles.lookup().unreflectGetter(ReflectionHelper.findField(clazz, names));
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private WorldExt() {}
 }

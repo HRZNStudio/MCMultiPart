@@ -1,7 +1,5 @@
 package mcmultipart.api.microblock;
 
-import java.util.Optional;
-
 import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -11,11 +9,13 @@ import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
-import net.minecraftforge.registries.IForgeRegistryEntry;
+import net.minecraftforge.registries.ForgeRegistryEntry;
 
-public abstract class MicroMaterial extends IForgeRegistryEntry.Impl<MicroMaterial> {
+import java.util.Optional;
+
+public abstract class MicroMaterial extends ForgeRegistryEntry<MicroMaterial> {
 
     protected Optional<IMicroMaterialDelegate> delegate;
 
@@ -46,11 +46,11 @@ public abstract class MicroMaterial extends IForgeRegistryEntry.Impl<MicroMateri
     public abstract IBlockState getDefaultState();
 
     public abstract IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ,
-            EntityLivingBase placer, EnumHand hand);
+                                                     EntityLivingBase placer, EnumHand hand);
 
-    public abstract IBlockState getActualState(IBlockAccess world, BlockPos pos, IBlockState state);
+    public abstract IBlockState getActualState(IWorldReader world, BlockPos pos, IBlockState state);
 
-    public IBlockState getExtendedState(IBlockAccess world, BlockPos pos, IBlockState state) {
+    public IBlockState getExtendedState(IWorldReader world, BlockPos pos, IBlockState state) {
         return state;
     }
 

@@ -7,12 +7,12 @@ import mcmultipart.api.item.ItemBlockMultipart.IPartPlacementLogic;
 
 public interface IWrappedBlock {
 
-    public IWrappedBlock setBlockPlacementLogic(IBlockPlacementLogic logic);
+    IWrappedBlock setBlockPlacementLogic(IBlockPlacementLogic logic);
 
-    public IWrappedBlock setPartPlacementLogic(IPartPlacementLogic logic);
+    IWrappedBlock setPartPlacementLogic(IPartPlacementLogic logic);
 
-    public IWrappedBlock setPlacementInfo(IBlockPlacementInfo info);
+    IWrappedBlock setPlacementInfo(IBlockPlacementInfo info);
 
-    public IWrappedBlock setPlacementInfo(IExtendedBlockPlacementInfo info);
+    IWrappedBlock setPlacementInfo(IExtendedBlockPlacementInfo info);
 
 }

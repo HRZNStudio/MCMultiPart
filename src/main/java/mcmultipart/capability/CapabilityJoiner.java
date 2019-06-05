@@ -1,18 +1,17 @@
 package mcmultipart.capability;
 
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
-import javax.annotation.Nonnull;
-
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.wrapper.CombinedInvWrapper;
 import net.minecraftforge.items.wrapper.EmptyHandler;
+
+import javax.annotation.Nonnull;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 public class CapabilityJoiner {
 
@@ -47,6 +46,21 @@ public class CapabilityJoiner {
                 baseIndex[i] = index;
             }
             this.slotCount = index;
+        }
+
+        public static IItemHandler join(List<IItemHandler> inventories) {
+            if (inventories.isEmpty()) {
+                return EmptyHandler.INSTANCE;
+            } else if (inventories.size() == 1) {
+                return inventories.get(0);
+            } else {
+                if (inventories.stream().allMatch(i -> i instanceof IItemHandlerModifiable)) {
+                    return new CombinedInvWrapper(
+                            inventories.stream().map(i -> (IItemHandlerModifiable) i).toArray(IItemHandlerModifiable[]::new));
+                } else {
+                    return new JoinedItemHandler(inventories.toArray(new IItemHandler[inventories.size()]));
+                }
+            }
         }
 
         protected int getIndexForSlot(int slot) {
@@ -114,21 +128,12 @@ public class CapabilityJoiner {
             return handler.getSlotLimit(localSlot);
         }
 
-        public static IItemHandler join(List<IItemHandler> inventories) {
-            if (inventories.isEmpty()) {
-                return EmptyHandler.INSTANCE;
-            } else if (inventories.size() == 1) {
-                return inventories.get(0);
-            } else {
-                if (inventories.stream().allMatch(i -> i instanceof IItemHandlerModifiable)) {
-                    return new CombinedInvWrapper(
-                            inventories.stream().map(i -> (IItemHandlerModifiable) i).toArray(IItemHandlerModifiable[]::new));
-                } else {
-                    return new JoinedItemHandler(inventories.toArray(new IItemHandler[inventories.size()]));
-                }
-            }
+        @Override
+        public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+            int index = getIndexForSlot(slot);
+            IItemHandler handler = getHandlerFromIndex(index);
+            int localSlot = getSlotFromIndex(slot, index);
+            return handler.isItemValid(localSlot, stack);
         }
-
     }
-
 }

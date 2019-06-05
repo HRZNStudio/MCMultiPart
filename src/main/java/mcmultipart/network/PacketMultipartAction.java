@@ -28,7 +28,8 @@ public class PacketMultipartAction extends Packet<PacketMultipartAction> {
     }
 
     @Override
-    public void handleServer(EntityPlayer player) { }
+    public void handleServer(EntityPlayer player) {
+    }
 
     /*
      * Format:

@@ -1,7 +1,6 @@
 package mcmultipart.api.multipart;
 
 import mcmultipart.api.container.IPartInfo;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
@@ -14,6 +13,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
 
 public interface IMultipartTile {
 
@@ -66,11 +66,11 @@ public interface IMultipartTile {
     }
 
     public default void readPartFromNBT(NBTTagCompound compound) {
-        getTileEntity().readFromNBT(compound);
+        getTileEntity().read(compound);
     }
 
     public default NBTTagCompound writePartToNBT(NBTTagCompound compound) {
-        return getTileEntity().writeToNBT(compound);
+        return getTileEntity().write(compound);
     }
 
     public default void markPartDirty() {
@@ -81,12 +81,12 @@ public interface IMultipartTile {
         return getTileEntity().getMaxRenderDistanceSquared();
     }
 
-    public default boolean isPartInvalid() {
-        return getTileEntity().isInvalid();
+    public default boolean isPartRemoved() {
+        return getTileEntity().isRemoved();
     }
 
-    public default void invalidatePart() {
-        getTileEntity().invalidate();
+    public default void removePart() {
+        getTileEntity().remove();
     }
 
     public default void validatePart() {
@@ -121,12 +121,8 @@ public interface IMultipartTile {
         getTileEntity().handleUpdateTag(tag);
     }
 
-    public default void onPartChunkUnload() {
-        getTileEntity().onChunkUnload();
-    }
-
-    public default boolean shouldRefreshPart(World world, BlockPos pos, IBlockState oldState, IBlockState newState) {
-        return getTileEntity().shouldRefresh(world, pos, oldState, newState);
+    public default void onPartChunkUnloaded() {
+        getTileEntity().onChunkUnloaded();
     }
 
     public default boolean shouldRenderPartInPass(int pass) {
@@ -149,11 +145,7 @@ public interface IMultipartTile {
         return getTileEntity().hasFastRenderer();
     }
 
-    public default boolean hasPartCapability(Capability<?> capability, EnumFacing facing) {
-        return getTileEntity().hasCapability(capability, facing);
-    }
-
-    public default <T> T getPartCapability(Capability<T> capability, EnumFacing facing) {
+    public default <T> LazyOptional<T> getPartCapability(Capability<T> capability, EnumFacing facing) {
         return getTileEntity().getCapability(capability, facing);
     }
 

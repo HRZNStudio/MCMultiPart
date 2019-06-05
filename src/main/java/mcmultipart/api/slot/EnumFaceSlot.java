@@ -22,6 +22,10 @@ public enum EnumFaceSlot implements IPartSlot, IPartSlot.IFaceSlot {
         this.facing = facing;
     }
 
+    public static EnumFaceSlot fromFace(EnumFacing face) {
+        return VALUES[face.ordinal()];
+    }
+
     @Override
     public ResourceLocation getRegistryName() {
         return this.name;
@@ -65,10 +69,6 @@ public enum EnumFaceSlot implements IPartSlot, IPartSlot.IFaceSlot {
         // - overrides the rest.
         // We can't access this slot from any other edges or faces.
         return 200;
-    }
-
-    public static EnumFaceSlot fromFace(EnumFacing face) {
-        return VALUES[face.ordinal()];
     }
 
 }

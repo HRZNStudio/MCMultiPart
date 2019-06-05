@@ -8,14 +8,15 @@ import mcmultipart.api.container.IMultipartContainerBlock;
 import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.ref.MCMPCapabilities;
 import mcmultipart.api.slot.IPartSlot;
-import mcmultipart.api.world.IMultipartBlockAccess;
+import mcmultipart.api.world.IMultipartBlockReader;
 import mcmultipart.api.world.IMultipartWorld;
 import mcmultipart.network.MultipartNetworkHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 
 import java.util.Collections;
@@ -26,12 +27,11 @@ import java.util.function.Function;
 
 public final class MultipartHelper {
 
-    private MultipartHelper() {
-    }
-
     private static BiFunction<World, BlockPos, IMultipartContainer> createTileFromWorldInfo;
     private static BiFunction<World, BlockPos, IMultipartContainer> createTile;
     private static Function<Block, IMultipart> getPart;
+    private MultipartHelper() {
+    }
 
     public static boolean addPart(World world, BlockPos pos, IPartSlot slot, IBlockState state, boolean simulated) {
         IMultipart part = getPart.apply(state.getBlock());
@@ -54,7 +54,7 @@ public final class MultipartHelper {
         return false;
     }
 
-    public static Optional<IPartInfo> getInfo(IBlockAccess world, BlockPos pos, IPartSlot slot) {
+    public static Optional<IPartInfo> getInfo(IBlockReader world, BlockPos pos, IPartSlot slot) {
         return getContainer(world, pos).map(c -> c.get(slot)).orElseGet(() -> {
             if (world instanceof World) {
                 IBlockState state = world.getBlockState(pos);
@@ -67,12 +67,12 @@ public final class MultipartHelper {
         });
     }
 
-    public static Optional<IMultipart> getPart(IBlockAccess world, BlockPos pos, IPartSlot slot) {
+    public static Optional<IMultipart> getPart(IBlockReader world, BlockPos pos, IPartSlot slot) {
         return getContainer(world, pos).map(c -> c.getPart(slot))
                 .orElseGet(() -> Optional.ofNullable(getPart.apply(world.getBlockState(pos).getBlock())));
     }
 
-    public static Optional<IMultipartTile> getPartTile(IBlockAccess world, BlockPos pos, IPartSlot slot) {
+    public static Optional<IMultipartTile> getPartTile(IBlockReader world, BlockPos pos, IPartSlot slot) {
         return getContainer(world, pos).map(c -> c.getPartTile(slot)).orElseGet(() -> {
             IMultipart part = getPart.apply(world.getBlockState(pos).getBlock());
             if (part != null) {
@@ -85,11 +85,11 @@ public final class MultipartHelper {
         });
     }
 
-    public static Optional<IBlockState> getPartState(IBlockAccess world, BlockPos pos, IPartSlot slot) {
+    public static Optional<IBlockState> getPartState(IBlockReader world, BlockPos pos, IPartSlot slot) {
         return getContainer(world, pos).map(c -> c.getState(slot)).orElseGet(() -> Optional.of(world.getBlockState(pos)));
     }
 
-    public static Optional<IMultipartContainer> getContainer(IBlockAccess world, BlockPos pos) {
+    public static Optional<IMultipartContainer> getContainer(IBlockReader world, BlockPos pos) {
         if (world.getBlockState(pos).getBlock() instanceof IMultipartContainerBlock) {
             TileEntity te = world.getTileEntity(pos);
             if (te != null) {
@@ -120,17 +120,17 @@ public final class MultipartHelper {
         }
         return Optional.empty();
     }
-    
+
     public static World unwrapWorld(World world) {
         if (world instanceof IMultipartWorld) {
-           return ((IMultipartWorld) world).getActualWorld();
+            return ((IMultipartWorld) world).getActualWorld();
         }
         return world;
     }
 
-    public static IBlockAccess unwrapBlockAccess(IBlockAccess world) {
-        if (world instanceof IMultipartBlockAccess) {
-           return ((IMultipartBlockAccess) world).getActualWorld();
+    public static IBlockReader unwrapBlockAccess(IBlockReader world) {
+        if (world instanceof IMultipartBlockReader) {
+            return ((IMultipartBlockReader) world).getActualWorld();
         }
         return world;
     }
@@ -219,7 +219,7 @@ public final class MultipartHelper {
         @Override
         public void removePart(IPartSlot slot) {
             if (slot == this.slot) {
-                world.setBlockToAir(this.pos);
+                world.setBlockState(this.pos, Blocks.AIR.getDefaultState());
             }
         }
 

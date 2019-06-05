@@ -28,10 +28,11 @@ import net.minecraft.util.*;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.GameData;
 
 import java.util.*;
@@ -40,18 +41,36 @@ import java.util.function.Consumer;
 
 public class TileMultipartContainer extends TileEntity implements IMultipartContainer {
 
-    private boolean isInWorld = true;
     private final Map<IPartSlot, PartInfo> parts = new ConcurrentHashMap<>(), partView = Collections.unmodifiableMap(parts);
+    private boolean isInWorld = true;
     private Map<IPartSlot, NBTTagCompound> missingParts;
     private World loadingWorld;
 
     private TileMultipartContainer(World world, BlockPos pos) {
+        super();
         setWorld(world);
         setPos(pos);
         isInWorld = false;
     }
 
     public TileMultipartContainer() {
+        super();
+    }
+
+    // Just make a tile. Not sure why this needs the world and position, but apparently it does...
+    public static IMultipartContainer createTile(World world, BlockPos pos) {
+        return new TileMultipartContainer(world, pos);
+    }
+
+    public static IMultipartContainer createTileFromWorldInfo(World world, BlockPos pos) {
+        PartInfo info = PartInfo.fromWorld(world, pos);
+        boolean tick = info.getTile() != null && info.getTile().isTickable();
+
+        TileMultipartContainer container = tick ? new TileMultipartContainer.Ticking(world, pos) : new TileMultipartContainer(world, pos);
+        container.isInWorld = false;
+        container.add(info.getSlot(), info);
+
+        return container;
     }
 
     @Override
@@ -62,11 +81,6 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         if (world != prevWorld) {
             parts.values().forEach(PartInfo::refreshWorld);
         }
-    }
-
-    @Override
-    protected void setWorldCreate(World world) {
-        loadingWorld = world;
     }
 
     @Override
@@ -188,7 +202,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         remove(slot);
 
         if (!getWorld().isRemote) {
-            info.getPart().breakPart(info);
+//            info.getPart().breakPart(info);
             info.getPart().onRemoved(info);
             parts.values().forEach(i -> i.getPart().onPartRemoved(i, info));
 
@@ -240,7 +254,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
                 if (container != this) transferTo(container);
 
                 WorldExt.setBlockStateHack(getWorld(), getPos(), MCMultiPart.multipart.getDefaultState()
-                        .withProperty(BlockMultipartContainer.PROPERTY_TICKING, container instanceof ITickable), 0);
+                        .with(BlockMultipartContainer.PROPERTY_TICKING, container instanceof ITickable), 0);
                 getWorld().setTileEntity(getPos(), container);
 
                 this.isInWorld = false;
@@ -283,15 +297,15 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound tag) {
-        tag = super.writeToNBT(tag);
+    public NBTTagCompound write(NBTTagCompound tag) {
+        tag = super.write(tag);
         tag = writeParts(tag, false);
         return tag;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound tag) {
-        super.readFromNBT(tag);
+    public void read(NBTTagCompound tag) {
+        super.read(tag);
         readParts(tag, false, loadingWorld);
     }
 
@@ -304,7 +318,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
 
     @Override
     public void handleUpdateTag(NBTTagCompound tag) {
-        super.readFromNBT(tag);
+        super.read(tag);
         readParts(tag, true, getPartWorld());
     }
 
@@ -322,21 +336,21 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         NBTTagCompound parts = new NBTTagCompound();
         this.parts.forEach((s, i) -> {
             NBTTagCompound t = new NBTTagCompound();
-            t.setInteger("state", MCMultiPart.stateMap.get(i.getState()));
+            t.putInt("state", MCMultiPart.stateMap.get(i.getState()));
             IMultipartTile tile = i.getTile();
             if (tile != null) {
                 if (update) {
-                    t.setTag("tile", tile.getPartUpdateTag());
+                    t.put("tile", tile.getPartUpdateTag());
                 } else {
-                    t.setTag("tile", tile.writePartToNBT(new NBTTagCompound()));
+                    t.put("tile", tile.writePartToNBT(new NBTTagCompound()));
                 }
             }
-            parts.setTag(Integer.toString(MCMultiPart.slotRegistry.getID(s)), t);
+            parts.put(Integer.toString(MCMultiPart.slotRegistry.getID(s)), t);
         });
         if (this.missingParts != null) {
-            this.missingParts.forEach((s, t) -> parts.setTag(Integer.toString(MCMultiPart.slotRegistry.getID(s)), t));
+            this.missingParts.forEach((s, t) -> parts.put(Integer.toString(MCMultiPart.slotRegistry.getID(s)), t));
         }
-        tag.setTag("parts", parts);
+        tag.put("parts", parts);
         return tag;
     }
 
@@ -344,20 +358,20 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         World prevWorld = this.world;
         this.world = world;
         ObjectIntIdentityMap<IBlockState> stateMap = GameData.getBlockStateIDMap();
-        NBTTagCompound parts = tag.getCompoundTag("parts");
+        NBTTagCompound parts = tag.getCompound("parts");
         Set<IPartSlot> visitedSlots = new HashSet<>();
-        for (String sID : parts.getKeySet()) {
+        for (String sID : parts.keySet()) {
             IPartSlot slot = MCMultiPart.slotRegistry.getValue(Integer.parseInt(sID));
             if (slot != null) {
                 visitedSlots.add(slot);
                 PartInfo prevInfo = this.parts.get(slot);
 
-                NBTTagCompound t = parts.getCompoundTag(sID);
-                IBlockState state = stateMap.getByValue(t.getInteger("state"));
+                NBTTagCompound t = parts.getCompound(sID);
+                IBlockState state = stateMap.getByValue(t.getInt("state"));
                 if (prevInfo != null) {
                     prevInfo.setState(state);
-                    if (t.hasKey("tile")) {
-                        NBTTagCompound tileTag = t.getCompoundTag("tile");
+                    if (t.contains("tile")) {
+                        NBTTagCompound tileTag = t.getCompound("tile");
                         IMultipartTile tile = prevInfo.getTile();
                         if (update) {
                             if (tile == null) {
@@ -376,8 +390,8 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
                     if (part != null) {
                         IMultipartTile tile = null;
                         NBTTagCompound tileTag = null;
-                        if (t.hasKey("tile")) {
-                            tileTag = t.getCompoundTag("tile");
+                        if (t.contains("tile")) {
+                            tileTag = t.getCompound("tile");
                             if (update) {
                                 tile = part.createMultipartTile(world, slot, state);
                             } else {
@@ -413,9 +427,9 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     @Override
-    public void onChunkUnload() {
-        super.onChunkUnload();
-        forEachTile(IMultipartTile::onPartChunkUnload);
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        forEachTile(IMultipartTile::onPartChunkUnloaded);
     }
 
     @Override
@@ -431,10 +445,10 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     @Override
-    public void invalidate() {
-        super.invalidate();
+    public void remove() {
+        super.remove();
         if (!isInWorld) {
-            forEachTile(IMultipartTile::invalidatePart);
+            forEachTile(IMultipartTile::removePart);
         }
     }
 
@@ -469,10 +483,10 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
 
     @Override
     public boolean hasFastRenderer() {
-        return !FMLCommonHandler.instance().getEffectiveSide().isClient() || hasFastRendererC();
+        return !FMLEnvironment.dist.isClient() || hasFastRendererC();
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     private boolean hasFastRendererC() {
         for (IPartInfo info : parts.values()) {
             TileEntity te = info.getTile() != null ? info.getTile().getTileEntity() : null;
@@ -485,47 +499,37 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
 
     @Override
     public boolean shouldRenderInPass(int pass) {
-        if (FMLCommonHandler.instance().getEffectiveSide().isClient()) {
+        if (FMLEnvironment.dist.isClient()) {
             shouldRenderInPassC(pass);
         }
         return true;
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public void shouldRenderInPassC(int pass) {
         TESRMultipartContainer.pass = pass;
     }
 
-    @Override
-    public boolean shouldRefresh(World world, BlockPos pos, IBlockState oldState, IBlockState newState) {
-        return oldState.getBlock() != newState.getBlock();
-    }
-
-    @Override
-    public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
-        if (capability == MCMPCapabilities.MULTIPART_CONTAINER) {
-            return true;
-        }
-        if (SlotUtil.viewContainer(this, i -> i.getTile() != null && i.getTile().hasPartCapability(capability, facing),
-                l -> l.stream().anyMatch(a -> a), false, true, facing)) {
-            return true;
-        }
-        return super.hasCapability(capability, facing);
-    }
-
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
+    public <T> LazyOptional<T> getCapability(Capability<T> capability, EnumFacing facing) {
         if (capability == MCMPCapabilities.MULTIPART_CONTAINER) {
-            return (T) this;
+            return LazyOptional.of(()->this).cast();
         }
         T val = SlotUtil
                 .viewContainer(this,
-                        i -> i.getTile() != null && i.getTile().hasPartCapability(capability, facing)
-                                ? i.getTile().getPartCapability(capability, facing) : null,
+                        i -> {
+                    if(i.getTile() !=null) {
+                        LazyOptional<T> t = i.getTile().getPartCapability(capability, facing);
+                        if(t.isPresent()) {
+                            return t.orElseThrow(NullPointerException::new);
+                        }
+                    }
+                    return null;
+                        },
                         l -> CapabilityJoiner.join(capability, l), null, true, facing);
         if (val != null) {
-            return val;
+            return LazyOptional.of(()->val);
         }
         return super.getCapability(capability, facing);
     }
@@ -551,11 +555,11 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         }
 
         @Override
-        public void update() {
+        public void tick() {
             if (tickingParts.isEmpty()) {
                 updateWorldState();
             }
-            tickingParts.forEach(ITickable::update);
+            tickingParts.forEach(ITickable::tick);
         }
 
         @Override
@@ -579,22 +583,6 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
             super.clear();
         }
 
-    }
-
-    // Just make a tile. Not sure why this needs the world and position, but apparently it does...
-    public static IMultipartContainer createTile(World world, BlockPos pos) {
-        return new TileMultipartContainer(world, pos);
-    }
-
-    public static IMultipartContainer createTileFromWorldInfo(World world, BlockPos pos) {
-        PartInfo info = PartInfo.fromWorld(world, pos);
-        boolean tick = info.getTile() != null && info.getTile().isTickable();
-
-        TileMultipartContainer container = tick ? new TileMultipartContainer.Ticking(world, pos) : new TileMultipartContainer(world, pos);
-        container.isInWorld = false;
-        container.add(info.getSlot(), info);
-
-        return container;
     }
 
 }

@@ -1,10 +1,6 @@
 package mcmultipart.api.container;
 
-import java.util.Map;
-import java.util.Optional;
-
 import com.google.common.base.Preconditions;
-
 import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.multipart.IMultipartTile;
 import mcmultipart.api.slot.IPartSlot;
@@ -13,6 +9,9 @@ import mcmultipart.multipart.MultipartRegistry;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+
+import java.util.Map;
+import java.util.Optional;
 
 public interface IMultipartContainer extends ISlottedContainer<IPartInfo> {
 

@@ -1,7 +1,5 @@
 package mcmultipart.client;
 
-import java.util.Optional;
-
 import mcmultipart.MCMPCommonProxy;
 import mcmultipart.MCMultiPart;
 import mcmultipart.api.event.DrawMultipartHighlightEvent;
@@ -26,6 +24,8 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
+
+import java.util.Optional;
 
 public class MCMPClientProxy extends MCMPCommonProxy {
 

@@ -17,6 +17,18 @@ import java.lang.reflect.Field;
 import java.util.function.Function;
 
 public abstract class MultipartAction {
+    public final BlockPos pos;
+    public final IPartSlot slot;
+    public final int type;
+
+    private MultipartAction(int type, BlockPos pos, IPartSlot slot) {
+        this.pos = pos;
+        this.slot = slot;
+        this.type = type;
+    }
+
+    public abstract void handlePacket(EntityPlayer player);
+
     public static final class Add extends DataCarrier {
         public static final int TYPE = 0;
 
@@ -36,20 +48,6 @@ public abstract class MultipartAction {
 
     public static final class Change extends DataCarrier {
         public static final int TYPE = 1;
-
-        public Change(BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound data) {
-            super(TYPE, pos, slot, state, data);
-        }
-
-        public Change(IPartInfo info) {
-            this(info.getPartPos(), info.getSlot(), info.getState(), info.getTile() != null ? getUpdateTag.apply(info.getTile().getPartUpdatePacket()) : null);
-        }
-
-        @Override
-        public void handlePacket(EntityPlayer player) {
-            PartInfo.handleUpdatePacket(player.world, pos, slot, state, data != null ? new SPacketUpdateTileEntity(pos, 0, data) : null);
-        }
-
         private static final MethodHandle SPacketUpdateTileEntity$nbt;
         private static final Function<SPacketUpdateTileEntity, NBTTagCompound> getUpdateTag;
 
@@ -69,6 +67,18 @@ public abstract class MultipartAction {
                 }
             };
         }
+
+        public Change(BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound data) {
+            super(TYPE, pos, slot, state, data);
+        }
+        public Change(IPartInfo info) {
+            this(info.getPartPos(), info.getSlot(), info.getState(), info.getTile() != null ? getUpdateTag.apply(info.getTile().getPartUpdatePacket()) : null);
+        }
+
+        @Override
+        public void handlePacket(EntityPlayer player) {
+            PartInfo.handleUpdatePacket(player.world, pos, slot, state, data != null ? new SPacketUpdateTileEntity(pos, 0, data) : null);
+        }
     }
 
     public static final class Remove extends MultipartAction {
@@ -83,19 +93,6 @@ public abstract class MultipartAction {
             PartInfo.handleRemovalPacket(player.world, pos, slot);
         }
     }
-
-    public final BlockPos pos;
-    public final IPartSlot slot;
-
-    public final int type;
-
-    private MultipartAction(int type, BlockPos pos, IPartSlot slot) {
-        this.pos = pos;
-        this.slot = slot;
-        this.type = type;
-    }
-
-    public abstract void handlePacket(EntityPlayer player);
 
     public static abstract class DataCarrier extends MultipartAction {
         public final IBlockState state;

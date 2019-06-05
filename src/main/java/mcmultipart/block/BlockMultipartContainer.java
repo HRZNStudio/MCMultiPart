@@ -33,7 +33,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Explosion;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.IPlantable;
@@ -54,10 +54,17 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
 
     public static final PropertyBool PROPERTY_TICKING = PropertyBool.create("ticking");
     public static final PropertyClientInfo PROPERTY_INFO = new PropertyClientInfo();
+    private boolean callingLightOpacity = false;
+    private boolean callingLightValue = false;
 
     public BlockMultipartContainer() {
         super(Material.GROUND);
         setDefaultState(getDefaultState().withProperty(PROPERTY_TICKING, true));
+    }
+
+    public static Optional<TileMultipartContainer> getTile(IWorldReader world, BlockPos pos) {
+        TileEntity te = world.getTileEntity(pos);
+        return te != null && te instanceof TileMultipartContainer ? Optional.of((TileMultipartContainer) te) : Optional.empty();
     }
 
     @Override
@@ -65,19 +72,14 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
         return meta == 0 ? new TileMultipartContainer.Ticking() : new TileMultipartContainer();
     }
 
-    public static Optional<TileMultipartContainer> getTile(IBlockAccess world, BlockPos pos) {
-        TileEntity te = world.getTileEntity(pos);
-        return te != null && te instanceof TileMultipartContainer ? Optional.of((TileMultipartContainer) te) : Optional.empty();
-    }
-
     @Override
-    public boolean isReplaceable(IBlockAccess world, BlockPos pos) {
+    public boolean isReplaceable(IWorldReader world, BlockPos pos) {
         return getTile(world, pos).map(t -> t.getParts().isEmpty()).orElse(true);
     }
 
     @Override
     public void addCollisionBoxToList(IBlockState state, World world, BlockPos pos, AxisAlignedBB entityBox, List<AxisAlignedBB> collidingBoxes,
-            Entity entity, boolean unknown) {
+                                      Entity entity, boolean unknown) {
         forEach(world, pos, i -> i.getPart().addCollisionBoxToList(i, entityBox, collidingBoxes, entity, unknown));
     }
 
@@ -138,7 +140,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public IBlockState getExtendedState(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public IBlockState getExtendedState(IBlockState state, IWorldReader world, BlockPos pos) {
         List<PartInfo.ClientInfo> info = getTile(world, pos).map(c -> c.getParts().values()//
                 .stream()//
                 .map(i -> i.getInfo(world, pos))//
@@ -178,7 +180,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public boolean isSideSolid(IBlockState state, IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public boolean isSideSolid(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         return anyMatch(world, pos, i -> i.getPart().isSideSolid(i.wrapAsNeeded(world), pos, i, side));
     }
 
@@ -258,7 +260,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
 
     @Override
     public boolean addLandingEffects(IBlockState state, WorldServer worldObj, BlockPos blockPosition, IBlockState iblockstate,
-            EntityLivingBase entity, int numberOfParticles) {
+                                     EntityLivingBase entity, int numberOfParticles) {
         return super.addLandingEffects(state, worldObj, blockPosition, iblockstate, entity, numberOfParticles);// TODO: Maybe?
     }
 
@@ -268,7 +270,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public boolean canConnectRedstone(IBlockState state, IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public boolean canConnectRedstone(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return false;
         }
@@ -279,7 +281,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public int getWeakPower(IBlockState state, IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public int getWeakPower(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return 0;
         }
@@ -288,7 +290,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public int getStrongPower(IBlockState state, IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public int getStrongPower(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing side) {
         if (side == null) {
             return 0;
         }
@@ -299,17 +301,17 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public boolean canCreatureSpawn(IBlockState state, IBlockAccess world, BlockPos pos, SpawnPlacementType type) {
+    public boolean canCreatureSpawn(IBlockState state, IWorldReader world, BlockPos pos, SpawnPlacementType type) {
         return anyMatch(world, pos, i -> i.getPart().canCreatureSpawn(i.wrapAsNeeded(world), pos, i, type));
     }
 
     @Override
-    public boolean canSustainLeaves(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public boolean canSustainLeaves(IBlockState state, IWorldReader world, BlockPos pos) {
         return anyMatch(world, pos, i -> i.getPart().canSustainLeaves(i.wrapAsNeeded(world), pos, i));
     }
 
     @Override
-    public boolean canSustainPlant(IBlockState state, IBlockAccess world, BlockPos pos, EnumFacing direction, IPlantable plantable) {
+    public boolean canSustainPlant(IBlockState state, IWorldReader world, BlockPos pos, EnumFacing direction, IPlantable plantable) {
         return anyMatch(world, pos, i -> i.getPart().canSustainPlant(i.wrapAsNeeded(world), pos, i, direction, plantable));
     }
 
@@ -329,7 +331,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public List<ItemStack> getDrops(IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
+    public List<ItemStack> getDrops(IWorldReader world, BlockPos pos, IBlockState state, int fortune) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().map(i -> i.getPart().getDrops(i.wrapAsNeeded(world), pos, i, fortune))
                 .flatMap(List::stream).collect(Collectors.toList())).orElse(Collections.emptyList());
     }
@@ -345,19 +347,17 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public int getFireSpreadSpeed(IBlockAccess world, BlockPos pos, EnumFacing face) {
+    public int getFireSpreadSpeed(IWorldReader world, BlockPos pos, EnumFacing face) {
         return super.getFireSpreadSpeed(world, pos, face);// TODO: Maybe?
     }
 
     @Override
-    public int getFlammability(IBlockAccess world, BlockPos pos, EnumFacing face) {
+    public int getFlammability(IWorldReader world, BlockPos pos, EnumFacing face) {
         return super.getFlammability(world, pos, face);// TODO: Maybe?
     }
 
-    private boolean callingLightOpacity = false;
-
     @Override
-    public int getLightOpacity(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public int getLightOpacity(IBlockState state, IWorldReader world, BlockPos pos) {
         if (callingLightOpacity) {
             return add(world, pos, i -> i.getPart().getLightOpacity(i.getState()), 255);
         }
@@ -367,10 +367,8 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
         return res;
     }
 
-    private boolean callingLightValue = false;
-
     @Override
-    public int getLightValue(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public int getLightValue(IBlockState state, IWorldReader world, BlockPos pos) {
         if (callingLightValue) {
             return max(world, pos, i -> i.getPart().getLightValue(i.getState()));
         }
@@ -381,7 +379,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public int getPackedLightmapCoords(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public int getPackedLightmapCoords(IBlockState state, IWorldReader world, BlockPos pos) {
         return super.getPackedLightmapCoords(state, world, pos);// TODO: Maybe?
     }
 
@@ -416,7 +414,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public boolean getWeakChanges(IBlockAccess world, BlockPos pos) {
+    public boolean getWeakChanges(IWorldReader world, BlockPos pos) {
         return true;
     }
 
@@ -437,23 +435,23 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public boolean isAir(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public boolean isAir(IBlockState state, IWorldReader world, BlockPos pos) {
         return getTile(world, pos).map(t -> t.getParts().isEmpty()).orElse(true);
     }
 
     @Override
-    public boolean isBeaconBase(IBlockAccess world, BlockPos pos, BlockPos beacon) {
+    public boolean isBeaconBase(IWorldReader world, BlockPos pos, BlockPos beacon) {
         return anyMatch(world, pos, i -> i.getPart().isBeaconBase(i.wrapAsNeeded(world), pos, i, beacon));
     }
 
     @Override
-    public boolean isBurning(IBlockAccess world, BlockPos pos) {
+    public boolean isBurning(IWorldReader world, BlockPos pos) {
         return anyMatch(world, pos, i -> i.getPart().isBurning(i.wrapAsNeeded(world), pos, i));
     }
 
     @Override
-    public Boolean isEntityInsideMaterial(IBlockAccess world, BlockPos pos, IBlockState state, Entity entity, double yToTest, Material material,
-            boolean testingHead) {
+    public Boolean isEntityInsideMaterial(IWorldReader world, BlockPos pos, IBlockState state, Entity entity, double yToTest, Material material,
+                                          boolean testingHead) {
         return getTile(world, pos).map(t -> t.getParts().values().stream()
                 .map(i -> i.getPart().isEntityInsideMaterial(i.wrapAsNeeded(world), pos, i, entity, yToTest, material, testingHead))
                 .filter(is -> is != null).anyMatch(i -> i)).orElse(false);
@@ -470,34 +468,34 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public boolean isFlammable(IBlockAccess world, BlockPos pos, EnumFacing face) {
+    public boolean isFlammable(IWorldReader world, BlockPos pos, EnumFacing face) {
         return anyMatch(world, pos, i -> i.getPart().isFlammable(i.wrapAsNeeded(world), pos, i, face));
     }
 
     @Override
-    public boolean isFoliage(IBlockAccess world, BlockPos pos) {
+    public boolean isFoliage(IWorldReader world, BlockPos pos) {
         return anyMatch(world, pos, i -> i.getPart().isFoliage(i.wrapAsNeeded(world), pos, i));
     }
 
     @Override
-    public boolean isLadder(IBlockState state, IBlockAccess world, BlockPos pos, EntityLivingBase entity) {
+    public boolean isLadder(IBlockState state, IWorldReader world, BlockPos pos, EntityLivingBase entity) {
         return anyMatch(world, pos, i -> i.getPart().isLadder(i.wrapAsNeeded(world), pos, i, entity) &&
                 Optional.ofNullable(i.getPart().getCollisionBoundingBox(i.getPartWorld(), pos, i.getState()).offset(pos))
                         .map(it -> it.intersects(entity.getEntityBoundingBox().grow(0.01 / 16F))).orElse(false));
     }
 
     @Override
-    public boolean isLeaves(IBlockState state, IBlockAccess world, BlockPos pos) {
+    public boolean isLeaves(IBlockState state, IWorldReader world, BlockPos pos) {
         return anyMatch(world, pos, i -> i.getPart().isLeaves(i.wrapAsNeeded(world), pos, i));
     }
 
     @Override
-    public boolean isPassable(IBlockAccess world, BlockPos pos) {
+    public boolean isPassable(IWorldReader world, BlockPos pos) {
         return anyMatch(world, pos, i -> i.getPart().isPassable(i.wrapAsNeeded(world), pos, i));
     }
 
     @Override
-    public boolean isWood(IBlockAccess world, BlockPos pos) {
+    public boolean isWood(IWorldReader world, BlockPos pos) {
         return allMatch(world, pos, i -> i.getPart().isWood(i.wrapAsNeeded(world), pos, i));
     }
 
@@ -513,7 +511,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
 
     @Override
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX,
-            float hitY, float hitZ) {
+                                    float hitY, float hitZ) {
         Pair<Vec3d, Vec3d> vectors = RayTraceHelper.getRayTraceVectors(player);
         RayTraceResult hit = collisionRayTrace(getDefaultState(), world, pos, vectors.getLeft(), vectors.getRight());
         if (hit != null) {
@@ -570,7 +568,7 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public void onNeighborChange(IBlockAccess world, BlockPos pos, BlockPos neighbor) {
+    public void onNeighborChange(IWorldReader world, BlockPos pos, BlockPos neighbor) {
         forEach(world, pos, i -> i.getPart().onNeighborChange(i, neighbor));
     }
 
@@ -594,37 +592,37 @@ public class BlockMultipartContainer extends Block implements ITileEntityProvide
     }
 
     @Override
-    public BlockFaceShape getBlockFaceShape(IBlockAccess world, IBlockState state, BlockPos pos, EnumFacing face) {
+    public BlockFaceShape getBlockFaceShape(IWorldReader world, IBlockState state, BlockPos pos, EnumFacing face) {
         if (face == null) {
             return BlockFaceShape.UNDEFINED;
         }
         return getTile(world,
                 pos).map(t -> SlotUtil.viewContainer(t, i -> i.getPart().getPartFaceShape(i, face),
-                        l -> l.stream().filter(Predicate.isEqual(BlockFaceShape.UNDEFINED).negate()).findFirst().orElse(BlockFaceShape.UNDEFINED),
-                        BlockFaceShape.UNDEFINED, true, face)).orElse(BlockFaceShape.UNDEFINED);
+                l -> l.stream().filter(Predicate.isEqual(BlockFaceShape.UNDEFINED).negate()).findFirst().orElse(BlockFaceShape.UNDEFINED),
+                BlockFaceShape.UNDEFINED, true, face)).orElse(BlockFaceShape.UNDEFINED);
     }
 
-    private void forEach(IBlockAccess world, BlockPos pos, Consumer<PartInfo> consumer) {
+    private void forEach(IWorldReader world, BlockPos pos, Consumer<PartInfo> consumer) {
         getTile(world, pos).ifPresent(t -> t.getParts().values().forEach(consumer));
     }
 
-    private boolean anyMatch(IBlockAccess world, BlockPos pos, Predicate<PartInfo> predicate) {
+    private boolean anyMatch(IWorldReader world, BlockPos pos, Predicate<PartInfo> predicate) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().anyMatch(predicate)).orElse(false);
     }
 
-    private boolean allMatch(IBlockAccess world, BlockPos pos, Predicate<PartInfo> predicate) {
+    private boolean allMatch(IWorldReader world, BlockPos pos, Predicate<PartInfo> predicate) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().allMatch(predicate)).orElse(false);
     }
 
-    private int add(IBlockAccess world, BlockPos pos, ToIntFunction<PartInfo> converter, int max) {
+    private int add(IWorldReader world, BlockPos pos, ToIntFunction<PartInfo> converter, int max) {
         return Math.min(getTile(world, pos).map(t -> t.getParts().values().stream().mapToInt(converter).reduce(0, (a, b) -> a + b)).orElse(0), max);
     }
 
-    private int max(IBlockAccess world, BlockPos pos, ToIntFunction<PartInfo> converter) {
+    private int max(IWorldReader world, BlockPos pos, ToIntFunction<PartInfo> converter) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().mapToInt(converter).max().orElse(0)).orElse(0);
     }
 
-    private float addF(IBlockAccess world, BlockPos pos, ToDoubleFunction<PartInfo> converter, double max) {
+    private float addF(IWorldReader world, BlockPos pos, ToDoubleFunction<PartInfo> converter, double max) {
         return (float) Math.min(getTile(world, pos).map(t -> t.getParts().values().stream().mapToDouble(converter).reduce(0D, (a, b) -> a + b))
                 .orElse(0D).floatValue(), max);
     }

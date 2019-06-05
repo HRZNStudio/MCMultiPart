@@ -2,7 +2,6 @@ package mcmultipart.api.slot;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 
@@ -33,6 +32,17 @@ public enum EnumEdgeSlot implements IPartSlot, IPartSlot.IEdgeSlot {
         this.axis = axis;
         this.face1 = face1;
         this.face2 = face2;
+    }
+
+    public static EnumEdgeSlot fromFaces(EnumFacing face1, EnumFacing face2) {
+        if (LOOKUP.isEmpty()) {
+            for (EnumEdgeSlot slot : VALUES) {
+                boolean swap = slot.face1.ordinal() < slot.face2.ordinal();
+                LOOKUP.put(swap ? slot.face1 : slot.face2, swap ? slot.face2 : slot.face1, slot);
+            }
+        }
+        boolean swap = face1.ordinal() < face2.ordinal();
+        return LOOKUP.get(swap ? face1 : face2, swap ? face2 : face1);
     }
 
     @Override
@@ -70,17 +80,6 @@ public enum EnumEdgeSlot implements IPartSlot, IPartSlot.IEdgeSlot {
     @Override
     public int getEdgeAccessPriority(EnumEdgeSlot edge, EnumFacing face) {
         return 300;
-    }
-
-    public static EnumEdgeSlot fromFaces(EnumFacing face1, EnumFacing face2) {
-        if (LOOKUP.isEmpty()) {
-            for (EnumEdgeSlot slot : VALUES) {
-                boolean swap = slot.face1.ordinal() < slot.face2.ordinal();
-                LOOKUP.put(swap ? slot.face1 : slot.face2, swap ? slot.face2 : slot.face1, slot);
-            }
-        }
-        boolean swap = face1.ordinal() < face2.ordinal();
-        return LOOKUP.get(swap ? face1 : face2, swap ? face2 : face1);
     }
 
 }

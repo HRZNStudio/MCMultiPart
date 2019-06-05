@@ -6,7 +6,7 @@ import mcmultipart.api.slot.SlotUtil;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.IWorldReader;
 
 public class MultipartRedstoneHelper {
 
@@ -44,36 +44,36 @@ public class MultipartRedstoneHelper {
 
     // Multipart lookups with world fallback
 
-    public static boolean canConnectRedstone(IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public static boolean canConnectRedstone(IWorldReader world, BlockPos pos, EnumFacing side) {
         return MultipartHelper.getContainer(world, pos).map(c -> canConnectRedstone(c, side)).orElseGet(() -> {
             IBlockState state = world.getBlockState(pos);
             return state.getBlock().canConnectRedstone(state, world, pos, side.getOpposite());
         });
     }
 
-    public static int getWeakPower(IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public static int getWeakPower(IWorldReader world, BlockPos pos, EnumFacing side) {
         return MultipartHelper.getContainer(world, pos).map(c -> getWeakPower(c, side))
                 .orElseGet(() -> world.getBlockState(pos).getWeakPower(world, pos, side.getOpposite()));
     }
 
-    public static int getStrongPower(IBlockAccess world, BlockPos pos, EnumFacing side) {
+    public static int getStrongPower(IWorldReader world, BlockPos pos, EnumFacing side) {
         return MultipartHelper.getContainer(world, pos).map(c -> getStrongPower(c, side))
                 .orElseGet(() -> world.getBlockState(pos).getStrongPower(world, pos, side.getOpposite()));
     }
 
-    public static boolean canConnectRedstone(IBlockAccess world, BlockPos pos, EnumEdgeSlot edge, EnumFacing side) {
+    public static boolean canConnectRedstone(IWorldReader world, BlockPos pos, EnumEdgeSlot edge, EnumFacing side) {
         return MultipartHelper.getContainer(world, pos).map(c -> canConnectRedstone(c, edge, side)).orElseGet(() -> {
             IBlockState state = world.getBlockState(pos);
             return state.getBlock().canConnectRedstone(state, world, pos, side.getOpposite());
         });
     }
 
-    public static int getWeakPower(IBlockAccess world, BlockPos pos, EnumEdgeSlot edge, EnumFacing side) {
+    public static int getWeakPower(IWorldReader world, BlockPos pos, EnumEdgeSlot edge, EnumFacing side) {
         return MultipartHelper.getContainer(world, pos).map(c -> getWeakPower(c, edge, side))
                 .orElseGet(() -> world.getBlockState(pos).getWeakPower(world, pos, side.getOpposite()));
     }
 
-    public static int getStrongPower(IBlockAccess world, BlockPos pos, EnumEdgeSlot edge, EnumFacing side) {
+    public static int getStrongPower(IWorldReader world, BlockPos pos, EnumEdgeSlot edge, EnumFacing side) {
         return MultipartHelper.getContainer(world, pos).map(c -> getStrongPower(c, edge, side))
                 .orElseGet(() -> world.getBlockState(pos).getStrongPower(world, pos, side.getOpposite()));
     }

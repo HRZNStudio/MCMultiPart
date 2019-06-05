@@ -1,11 +1,11 @@
 package mcmultipart.api.multipart;
 
-import java.util.function.Predicate;
-
 import mcmultipart.api.addon.IWrappedBlock;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+
+import java.util.function.Predicate;
 
 public interface IMultipartRegistry {
 

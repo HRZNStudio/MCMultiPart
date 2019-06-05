@@ -1,10 +1,10 @@
 package mcmultipart.util;
 
-import java.util.List;
-
 import mcmultipart.multipart.PartInfo;
 import mcmultipart.multipart.PartInfo.ClientInfo;
 import net.minecraftforge.common.property.IUnlistedProperty;
+
+import java.util.List;
 
 public class PropertyClientInfo implements IUnlistedProperty<List<PartInfo.ClientInfo>> {
 
@@ -18,7 +18,7 @@ public class PropertyClientInfo implements IUnlistedProperty<List<PartInfo.Clien
         return value != null;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Class<List<ClientInfo>> getType() {
         return (Class) List.class;
