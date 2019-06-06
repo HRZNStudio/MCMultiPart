@@ -11,6 +11,7 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.entity.*;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -85,8 +86,7 @@ public interface IMultipart {
         return convertToMultipartTile(tile);
     }
 
-    IPartSlot getSlotForPlacement(World world, BlockPos pos, IBlockState state, EnumFacing facing, float hitX, float hitY,
-                                  float hitZ, EntityLivingBase placer);
+    IPartSlot getSlotForPlacement(BlockItemUseContext context, IBlockState state);
 
     IPartSlot getSlotFromWorld(IBlockReader world, BlockPos pos, IBlockState state);
 

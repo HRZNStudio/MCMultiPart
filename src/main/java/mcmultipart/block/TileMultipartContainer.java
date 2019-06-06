@@ -284,6 +284,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         IBlockState st = getWorld().getBlockState(getPos());
         getWorld().markAndNotifyBlock(getPos(), null, prevSt, st, 1); // Only cause a block update, clients are notified through a packet
         getWorld().checkLight(getPos());
+        requestModelDataUpdate();
     }
 
     private int countTickingParts() {

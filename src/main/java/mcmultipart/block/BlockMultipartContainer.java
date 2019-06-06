@@ -28,6 +28,8 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.*;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -91,9 +93,9 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         Optional<TileMultipartContainer> te = getTile(world, pos);
         return te.map(t -> t.getParts().values()//
                 .stream()//
-                .map(i -> Pair.of(i, i.getPart().getRayTraceResult(i, start, end, original)))
+                .map(i -> Pair.of(i, i.getPart().getRayTraceResult(i, start, end, Block.collisionRayTrace(i.getState(), i.getPartWorld(), i.getPartPos(), start, end))))
                 .filter(p -> p.getValue() != null)//
-                .min(Comparator.comparingDouble(hit -> hit.getValue().hitVec.squareDistanceTo(start)))
+                .min(Comparator.comparingDouble(hit -> hit.getValue().hitVec.distanceTo(start)))
                 .map(p -> {
                     RayTraceResult hit = new RayTraceResult(p.getValue().hitVec, p.getValue().sideHit, p.getValue().getBlockPos());
                     hit.hitInfo = p.getValue();
@@ -195,40 +197,40 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
     public boolean addHitEffects(IBlockState mpState, World world, RayTraceResult hit, ParticleManager manager) {
         if (hit != null) {
             BlockPos pos = hit.getBlockPos();
-            IPartInfo part = getTile(world, pos).get().get(MCMultiPart.slotRegistry.getValue(hit.subHit)).get();
-            if (!part.getPart().addHitEffects(part, (RayTraceResult) hit.hitInfo, manager)) {
-                if (part.getPart().getRenderType(part) != EnumBlockRenderType.INVISIBLE) {
-                    int x = pos.getX(), y = pos.getY(), z = pos.getZ();
-                    AxisAlignedBB aabb = part.getPart().getShape(part.getState(), part.getActualWorld(), part.getPartPos()).getBoundingBox();
-                    double pX = x + world.rand.nextDouble() * (aabb.maxX - aabb.minX - 0.2) + 0.1 + aabb.minX;
-                    double pY = y + world.rand.nextDouble() * (aabb.maxY - aabb.minY - 0.2) + 0.1 + aabb.minY;
-                    double pZ = z + world.rand.nextDouble() * (aabb.maxZ - aabb.minZ - 0.2) + 0.1 + aabb.minZ;
+            getTile(world, pos).flatMap(tile -> tile.get(MCMultiPart.slotRegistry.getValue(hit.subHit))).ifPresent(part -> {
+                if (!part.getPart().addHitEffects(part, (RayTraceResult) hit.hitInfo, manager)) {
+                    if (part.getPart().getRenderType(part) != EnumBlockRenderType.INVISIBLE) {
+                        int x = pos.getX(), y = pos.getY(), z = pos.getZ();
+                        AxisAlignedBB aabb = part.getPart().getShape(part.getState(), part.getActualWorld(), part.getPartPos()).getBoundingBox();
+                        double pX = x + world.rand.nextDouble() * (aabb.maxX - aabb.minX - 0.2) + 0.1 + aabb.minX;
+                        double pY = y + world.rand.nextDouble() * (aabb.maxY - aabb.minY - 0.2) + 0.1 + aabb.minY;
+                        double pZ = z + world.rand.nextDouble() * (aabb.maxZ - aabb.minZ - 0.2) + 0.1 + aabb.minZ;
 
-                    switch (hit.sideHit) {
-                        case DOWN:
-                            pY = y + aabb.minY - 0.1;
-                            break;
-                        case UP:
-                            pY = y + aabb.maxY + 0.1;
-                            break;
-                        case NORTH:
-                            pZ = z + aabb.minZ - 0.1;
-                            break;
-                        case SOUTH:
-                            pZ = z + aabb.maxZ + 0.1;
-                            break;
-                        case WEST:
-                            pX = x + aabb.minX - 0.1;
-                            break;
-                        case EAST:
-                            pX = x + aabb.maxX + 0.1;
-                            break;
+                        switch (hit.sideHit) {
+                            case DOWN:
+                                pY = y + aabb.minY - 0.1;
+                                break;
+                            case UP:
+                                pY = y + aabb.maxY + 0.1;
+                                break;
+                            case NORTH:
+                                pZ = z + aabb.minZ - 0.1;
+                                break;
+                            case SOUTH:
+                                pZ = z + aabb.maxZ + 0.1;
+                                break;
+                            case WEST:
+                                pX = x + aabb.minX - 0.1;
+                                break;
+                            case EAST:
+                                pX = x + aabb.maxX + 0.1;
+                                break;
+                        }
+
+                        manager.addEffect(new ParticleDigging(world, pX, pY, pZ, 0.0D, 0.0D, 0.0D, part.getState()) {}.setBlockPos(pos).multiplyVelocity(0.2F).multipleParticleScaleBy(0.6F));
                     }
-
-                    manager.addEffect(new ParticleDigging(world, pX, pY, pZ, 0.0D, 0.0D, 0.0D, part.getState()) {
-                    }.setBlockPos(pos).multiplyVelocity(0.2F).multipleParticleScaleBy(0.6F));
                 }
-            }
+            });
         }
         return true;
     }
@@ -527,6 +529,17 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //                it.getPart().onEntityCollidedWithPart(it, entity);
 //        });
 //    }
+
+    @Override
+    public VoxelShape getShape(IBlockState state, IBlockReader world, BlockPos pos) {
+        return getTile(world, pos).map(tile -> {
+            final VoxelShape[] shape = {VoxelShapes.empty()};
+            tile.getParts().values().forEach(part -> {
+                shape[0] = VoxelShapes.or(shape[0], part.getPart().getShape(part.getState(), part.getPartWorld(), part.getPartPos()));
+            });
+            return shape[0];
+        }).orElse(VoxelShapes.empty());
+    }
 
     @Override
     public void onEntityWalk(World world, BlockPos pos, Entity entity) {

@@ -17,6 +17,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
@@ -25,6 +26,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 
+import java.util.HashMap;
 import java.util.Optional;
 
 public class MCMPClientProxy extends MCMPCommonProxy {
@@ -92,7 +94,7 @@ public class MCMPClientProxy extends MCMPCommonProxy {
             }
 
             int slotID = hit.subHit;
-            PartInfo info = tile.get().getParts().get(MCMultiPart.slotRegistry.getValue(slotID));
+            PartInfo info = new HashMap<>(tile.get().getParts()).get(MCMultiPart.slotRegistry.getValue(slotID));
             if (info == null || !(hit.hitInfo instanceof RayTraceResult)) {
                 return;
             }
@@ -113,8 +115,8 @@ public class MCMPClientProxy extends MCMPCommonProxy {
                     double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
                     double y = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
                     double z = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
-                    WorldRenderer.drawShape(info.getPart().getRenderShape(info.getState(), info.getActualWorld(), info.getPartPos()).withOffset(-x, -y, -z),
-                            0.0F, 0.0F, 0.0F, 1, 1, 1, 1);
+                    WorldRenderer.drawShape(info.getPart().getRenderShape(info.getState(), info.getActualWorld(), info.getPartPos()).withOffset(pos.getX(), pos.getY(),pos.getZ()),
+                            -x, -y, -z, 1, 1, 1, 1);
                 }
 
                 GlStateManager.depthMask(true);

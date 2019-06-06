@@ -9,7 +9,11 @@ import mcmultipart.api.item.ItemBlockMultipart.IExtendedBlockPlacementInfo;
 import mcmultipart.api.item.ItemBlockMultipart.IPartPlacementLogic;
 import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.multipart.IMultipartRegistry;
+import mcmultipart.api.multipart.IMultipartTile;
+import mcmultipart.api.multipart.MultipartHelper;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -67,7 +71,13 @@ public enum MultipartRegistry implements IMultipartRegistry {
     public final class WrappedBlock implements IWrappedBlock {
 
         private IBlockPlacementLogic blockPlacementLogic;
-        private IPartPlacementLogic partPlacementLogic = ItemBlockMultipart::placePartAt;
+        private IPartPlacementLogic partPlacementLogic = new IPartPlacementLogic() {
+            @Override
+            public boolean placePart(BlockItemUseContext context, IMultipart multipartBlock, IBlockState state) {
+                System.out.println("test placement");
+                return false;
+            }
+        };// = ItemBlockMultipart::placePartAt;
         private IBlockPlacementInfo placementInfo;
 
         @Override

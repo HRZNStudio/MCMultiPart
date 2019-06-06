@@ -38,6 +38,8 @@ import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 import net.minecraftforge.forgespi.language.ModFileScanData;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.registries.ForgeRegistry;
@@ -68,6 +70,13 @@ public class MCMultiPart {
     public static Logger log;
 
     public static Block multipart;
+
+    public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
+            new ResourceLocation(MCMultiPart.MODID, "network"),
+            () -> "1.0.0",
+            s -> s.equals("1.0.0"),
+            s -> s.equals("1.0.0")
+    );
 
     public static ForgeRegistry<IPartSlot> slotRegistry;
     public static ForgeRegistry<MicroMaterial> microMaterialRegistry;

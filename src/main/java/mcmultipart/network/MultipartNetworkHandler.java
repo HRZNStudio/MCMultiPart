@@ -1,6 +1,7 @@
 package mcmultipart.network;
 
 import mcmultipart.MCMultiPart;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.management.PlayerChunkMap;
@@ -23,27 +24,20 @@ import java.util.Map;
 
 public class MultipartNetworkHandler {
 
-    public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(MCMultiPart.MODID, "network"),
-            () -> "1.0.0",
-            s -> s.equals("1.0.0"),
-            s -> s.equals("1.0.0")
-    );
-
     private static Map<Triple<Integer, Integer, Integer>, ChangeList> changeList = new HashMap<>();
 
     public static void init() {
         // wrapper.registerMessage(PacketMultipartChange.class, PacketMultipartChange.class, 0, Side.CLIENT);
         // wrapper.registerMessage(PacketMultipartAdd.class, PacketMultipartAdd.class, 1, Side.CLIENT);
         // wrapper.registerMessage(PacketMultipartRemove.class, PacketMultipartRemove.class, 2, Side.CLIENT);
-        channel.registerMessage(0, PacketMultipartAction.class, (packet, buffer) -> packet.toBytes(buffer), buffer -> {
+        MCMultiPart.channel.registerMessage(0, PacketMultipartAction.class, PacketMultipartAction::toBytes, buffer -> {
             PacketMultipartAction action = new PacketMultipartAction();
             action.fromBytes(buffer);
             return action;
         }, (packetMultipartAction, contextSupplier) -> {
             NetworkEvent.Context context = contextSupplier.get();
             if (context.getDirection().getReceptionSide() == LogicalSide.CLIENT) {
-                packetMultipartAction.handleClient(context.getSender());
+                packetMultipartAction.handleClient(Minecraft.getInstance().player);
             } else {
                 packetMultipartAction.handleServer(context.getSender());
             }
@@ -89,13 +83,13 @@ public class MultipartNetworkHandler {
             PlayerChunkMap manager = world.getPlayerChunkMap();
             for (EntityPlayer player : world.playerEntities) {
                 if (manager.isPlayerWatchingChunk((EntityPlayerMP) player, chunkX, chunkY)) {
-                    channel.send(PacketDistributor.PLAYER.with(() -> (EntityPlayerMP) player), new PacketMultipartAction(list));
+                    MCMultiPart.channel.send(PacketDistributor.PLAYER.with(() -> (EntityPlayerMP) player), new PacketMultipartAction(list));
                 }
             }
         }
     }
 
     public static void sendToServer(Packet<?> message) {
-        channel.sendToServer(message);
+        MCMultiPart.channel.sendToServer(message);
     }
 }
