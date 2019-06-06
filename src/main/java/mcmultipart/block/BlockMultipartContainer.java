@@ -540,6 +540,17 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
             return shape[0];
         }).orElse(VoxelShapes.empty());
     }
+    
+    @Override
+    public VoxelShape getCollisionShape(IBlockState state, IBlockReader world, BlockPos pos) {
+        return getTile(world, pos).map(tile -> {
+            final VoxelShape[] shape = {VoxelShapes.empty()};
+            tile.getParts().values().forEach(part -> {
+                shape[0] = VoxelShapes.or(shape[0], part.getPart().getCollisionShape(part.getState(), part.getPartWorld(), part.getPartPos()));
+            });
+            return shape[0];
+        }).orElse(VoxelShapes.empty());
+    }
 
     @Override
     public void onEntityWalk(World world, BlockPos pos, Entity entity) {
