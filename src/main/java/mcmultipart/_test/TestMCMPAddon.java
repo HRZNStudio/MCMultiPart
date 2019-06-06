@@ -2,27 +2,48 @@ package mcmultipart._test;
 
 import mcmultipart.api.addon.IMCMPAddon;
 import mcmultipart.api.addon.MCMPAddon;
-import mcmultipart.api.item.ItemBlockMultipart;
 import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.multipart.IMultipartRegistry;
 import mcmultipart.api.slot.EnumFaceSlot;
 import mcmultipart.api.slot.IPartSlot;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSlab;
 import net.minecraft.block.BlockTorchWall;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.BlockItemUseContext;
+import net.minecraft.state.properties.SlabType;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReaderBase;
-import net.minecraft.world.World;
+import net.minecraftforge.registries.ForgeRegistries;
 
 @MCMPAddon
 public class TestMCMPAddon implements IMCMPAddon {
     @Override
     public void registerParts(IMultipartRegistry registry) {
+        ForgeRegistries.BLOCKS.getValues().forEach(block -> {
+            if(block instanceof BlockSlab) {
+                registry.registerPartWrapper(block, new IMultipart() {
+                    @Override
+                    public Block getBlock() {
+                        return block;
+                    }
+
+                    @Override
+                    public IPartSlot getSlotForPlacement(BlockItemUseContext context, IBlockState state) {
+                        return state.get(BlockSlab.TYPE) == SlabType.TOP ? EnumFaceSlot.UP.getSlot() : EnumFaceSlot.DOWN.getSlot();
+                    }
+
+                    @Override
+                    public IPartSlot getSlotFromWorld(IBlockReader world, BlockPos pos, IBlockState state) {
+                        return state.get(BlockSlab.TYPE) == SlabType.TOP ? EnumFaceSlot.UP.getSlot() : EnumFaceSlot.DOWN.getSlot();
+                    }
+                });
+                registry.registerStackWrapper(block);
+            }
+        });
         registry.registerPartWrapper(Blocks.TORCH, new IMultipart() {
             @Override
             public Block getBlock() {

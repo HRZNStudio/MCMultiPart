@@ -10,6 +10,7 @@ import mcmultipart.multipart.PartInfo;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.BlockFaceShape;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.particle.ParticleDigging;
 import net.minecraft.client.particle.ParticleManager;
@@ -20,10 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.state.BooleanProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumBlockRenderType;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.NonNullList;
+import net.minecraft.util.*;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
@@ -110,6 +108,30 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
     }
 
     @Override
+    public BlockFaceShape getBlockFaceShape(IBlockReader world, IBlockState state, BlockPos pos, EnumFacing face) {
+        if (face == null) {
+            return BlockFaceShape.UNDEFINED;
+        }
+        return getTile(world,
+                pos).map(t -> SlotUtil.viewContainer(t, i -> i.getPart().getPartFaceShape(i, face),
+                l -> l.stream().filter(Predicate.isEqual(BlockFaceShape.UNDEFINED).negate()).findFirst().orElse(BlockFaceShape.UNDEFINED),
+                BlockFaceShape.UNDEFINED, true, face)).orElse(BlockFaceShape.UNDEFINED);
+    }
+
+    @Override
+    public IBlockState updatePostPlacement(IBlockState state, EnumFacing face, IBlockState facingState, IWorld world, BlockPos pos, BlockPos facingPos) {
+        forEach(world, pos, i -> {
+            IBlockState s = i.getPart().updatePostPlacement(i, face, facingState, facingPos);
+            if (s.isAir()) {
+                i.remove();
+            } else {
+                i.setState(s);
+            }
+        });
+        return state;
+    }
+
+    @Override
     public boolean isNormalCube(IBlockState state) {
         return false;
     }
@@ -136,21 +158,29 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         RayTraceResult hit = collisionRayTrace(state, world, pos, vectors.getLeft(), vectors.getRight());
         Optional<TileMultipartContainer> tile = getTile(world, pos);
         if (hit != null && tile.isPresent()) {
-            if (!world.isRemote) {
-                IPartSlot slot = MCMultiPart.slotRegistry.getValue(hit.subHit);
-                boolean canRemove = tile.get().get(slot).map(i -> {
-                    if (i.getPart().canPlayerDestroy(i, player)) {
-                        i.getPart().onPartHarvested(i, player);
-                        if (player == null || !player.abilities.isCreativeMode) {
+            IPartSlot slot = MCMultiPart.slotRegistry.getValue(hit.subHit);
+            boolean canRemove = tile.get().get(slot).map(i -> {
+                if (i.getPart().canPlayerDestroy(i, player)) {
+                    i.getPart().onPartHarvested(i, player);
+                    if (player == null || !player.abilities.isCreativeMode) {
+                        if (!world.isRemote) {
                             i.getPart().getDrops(i.getPartWorld(), pos, i, 0).forEach(s -> spawnAsEntity(world, pos, s));
                         }
-                        return true;
-                    } else {
-                        return false;
                     }
-                }).orElse(true);
-                if (canRemove)
+                    return true;
+                } else {
+                    return false;
+                }
+            }).orElse(true);
+            if (canRemove) {
+                if (!world.isRemote) {
                     tile.get().removePart(slot);
+                } else {
+                    tile.flatMap(t -> t.getPartTile(slot)).ifPresent(mpt -> {
+                        SoundType soundtype = mpt.getPartWorld().getBlockState(mpt.getPartPos()).getSoundType(mpt.getPartWorld(), mpt.getPartPos(), player);
+                        mpt.getPartWorld().playSound(player, mpt.getPartPos(), soundtype.getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
+                    });
+                }
             }
         }
         return false;
@@ -372,21 +402,19 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return ItemStack.EMPTY;
     }
 
-    //    @Override
-    public float getPlayerRelativeBlockHardness(IBlockState state, EntityPlayer player, World world, BlockPos pos) {
-        Pair<Vec3d, Vec3d> vectors = RayTraceHelper.getRayTraceVectors(player);
-        RayTraceResult hit = collisionRayTrace(getDefaultState(), world, pos, vectors.getLeft(), vectors.getRight());
-        if (hit != null) {
-            return getTile(world, pos).map(t -> t.get(MCMultiPart.slotRegistry.getValue(hit.subHit)).get())
-                    .map(i -> i.getPart().getPlayerRelativePartHardness(i, (RayTraceResult) hit.hitInfo, player)).orElse(0F);
+    @Override
+    public float getPlayerRelativeBlockHardness(IBlockState state, EntityPlayer player, IBlockReader world, BlockPos pos) {
+        if(world instanceof World) {
+            Pair<Vec3d, Vec3d> vectors = RayTraceHelper.getRayTraceVectors(player);
+            RayTraceResult hit = collisionRayTrace(getDefaultState(),(World) world, pos, vectors.getLeft(), vectors.getRight());
+            if (hit != null) {
+                return getTile(world, pos).map(t -> t.get(MCMultiPart.slotRegistry.getValue(hit.subHit)).get())
+                        .map(i -> i.getPart().getPlayerRelativePartHardness(i, (RayTraceResult) hit.hitInfo, player)).orElse(0F);
+            }
         }
         return 0;
     }
 
-    //    @Override
-    public SoundType getSoundType(IBlockState state, World world, BlockPos pos, Entity entity) {
-        return super.getSoundType(state, world, pos, entity);// TODO: Maybe? Needs a PR with the type of sound requested... >_>
-    }
 //    @Override
 //    public boolean getTickRandomly() {
 //        return true;
@@ -530,6 +558,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //        });
 //    }
 
+
     @Override
     public VoxelShape getShape(IBlockState state, IBlockReader world, BlockPos pos) {
         return getTile(world, pos).map(tile -> {
@@ -540,7 +569,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
             return shape[0];
         }).orElse(VoxelShapes.empty());
     }
-    
+
     @Override
     public VoxelShape getCollisionShape(IBlockState state, IBlockReader world, BlockPos pos) {
         return getTile(world, pos).map(tile -> {
@@ -591,39 +620,28 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 //            }
 //        });
 //    }
-//
-//    @Override
-//    public BlockFaceShape getBlockFaceShape(IWorldReader world, IBlockState state, BlockPos pos, EnumFacing face) {
-//        if (face == null) {
-//            return BlockFaceShape.UNDEFINED;
-//        }
-//        return getTile(world,
-//                pos).map(t -> SlotUtil.viewContainer(t, i -> i.getPart().getPartFaceShape(i, face),
-//                l -> l.stream().filter(Predicate.isEqual(BlockFaceShape.UNDEFINED).negate()).findFirst().orElse(BlockFaceShape.UNDEFINED),
-//                BlockFaceShape.UNDEFINED, true, face)).orElse(BlockFaceShape.UNDEFINED);
-//    }
-
-    private void forEach(IWorldReader world, BlockPos pos, Consumer<PartInfo> consumer) {
+//  Z
+    private void forEach(IBlockReader world, BlockPos pos, Consumer<PartInfo> consumer) {
         getTile(world, pos).ifPresent(t -> t.getParts().values().forEach(consumer));
     }
 
-    private boolean anyMatch(IWorldReader world, BlockPos pos, Predicate<PartInfo> predicate) {
+    private boolean anyMatch(IBlockReader world, BlockPos pos, Predicate<PartInfo> predicate) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().anyMatch(predicate)).orElse(false);
     }
 
-    private boolean allMatch(IWorldReader world, BlockPos pos, Predicate<PartInfo> predicate) {
+    private boolean allMatch(IBlockReader world, BlockPos pos, Predicate<PartInfo> predicate) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().allMatch(predicate)).orElse(false);
     }
 
-    private int add(IWorldReader world, BlockPos pos, ToIntFunction<PartInfo> converter, int max) {
+    private int add(IBlockReader world, BlockPos pos, ToIntFunction<PartInfo> converter, int max) {
         return Math.min(getTile(world, pos).map(t -> t.getParts().values().stream().mapToInt(converter).reduce(0, (a, b) -> a + b)).orElse(0), max);
     }
 
-    private int max(IWorldReader world, BlockPos pos, ToIntFunction<PartInfo> converter) {
+    private int max(IBlockReader world, BlockPos pos, ToIntFunction<PartInfo> converter) {
         return getTile(world, pos).map(t -> t.getParts().values().stream().mapToInt(converter).max().orElse(0)).orElse(0);
     }
 
-    private float addF(IWorldReader world, BlockPos pos, ToDoubleFunction<PartInfo> converter, double max) {
+    private float addF(IBlockReader world, BlockPos pos, ToDoubleFunction<PartInfo> converter, double max) {
         return (float) Math.min(getTile(world, pos).map(t -> t.getParts().values().stream().mapToDouble(converter).reduce(0D, (a, b) -> a + b))
                 .orElse(0D).floatValue(), max);
     }

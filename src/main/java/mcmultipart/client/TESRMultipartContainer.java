@@ -60,8 +60,7 @@ public class TESRMultipartContainer extends TileEntityRenderer<TileMultipartCont
     }
 
     @Override
-    public void render(TileMultipartContainer te, double x, double y, double z, float partialTicks,
-                       int destroyStage) {
+    public void render(TileMultipartContainer te, double x, double y, double z, float partialTicks, int destroyStage) {
         if (destroyStage >= 0) {
             RayTraceResult hit = Minecraft.getInstance().objectMouseOver;
             if (hit.type == RayTraceResult.Type.BLOCK && hit.getBlockPos().equals(te.getPartPos())) {
@@ -73,13 +72,13 @@ public class TESRMultipartContainer extends TileEntityRenderer<TileMultipartCont
                     if (info.getTile() != null && info.getTile().canPartRenderBreaking()) {
                         TileEntityRendererDispatcher.instance.render(info.getTile().getTileEntity(), x, y, z, partialTicks, destroyStage, false);
                     } else {
-                        if (MinecraftForgeClient.getRenderPass() == 1) {
+                        if (MinecraftForgeClient.getRenderPass() == 0) {
                             IBlockState state = info.getState();
                             IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(state);
                             if (model != null) {
 
                                 TextureAtlasSprite breakingTexture = Minecraft.getInstance().getTextureMap()
-                                        .getAtlasSprite("minecraft:blocks/destroy_stage_" + destroyStage);
+                                        .getAtlasSprite("minecraft:block/destroy_stage_" + destroyStage);
 
                                 startBreaking();
                                 BufferBuilder buffer = Tessellator.getInstance().getBuffer();

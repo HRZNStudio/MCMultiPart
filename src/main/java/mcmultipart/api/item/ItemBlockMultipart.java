@@ -78,14 +78,17 @@ public class ItemBlockMultipart extends ItemBlock {
 
     public static EnumActionResult place(BlockItemUseContext context, IBlockPlacementInfo placementInfo, IMultipart value, IBlockPlacementLogic blockPlacementLogic, IPartPlacementLogic partPlacementLogic) {
         BlockPos pos = context.getPos();
-        World world =context.getWorld();
-        if(!world.isRemote) {
-            IBlockState state = placementInfo.getStateForPlacement(context);
-            value = MultipartRegistry.INSTANCE.getPart(state.getBlock());
-            IPartSlot slot = value.getSlotForPlacement(context, state);
-            if (MultipartHelper.addPart(world, pos, slot, state, false)) {
-                return EnumActionResult.SUCCESS;
-            }
+        World world = context.getWorld();
+        EntityPlayer player = context.getPlayer();
+        IBlockState state = placementInfo.getStateForPlacement(context);
+        if (state == null)
+            return EnumActionResult.PASS;
+        value = MultipartRegistry.INSTANCE.getPart(state.getBlock());
+        IPartSlot slot = value.getSlotForPlacement(context, state);
+        if (MultipartHelper.addPart(world, pos, slot, state, world.isRemote)) {
+            SoundType soundtype = state.getSoundType(world, pos, player);
+            world.playSound(player, pos, soundtype.getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
+            return EnumActionResult.SUCCESS;
         }
         return EnumActionResult.PASS;
     }

@@ -287,4 +287,8 @@ public interface IMultipart {
     default RayTraceResult getRayTraceResult(PartInfo info, Vec3d start, Vec3d end, RayTraceResult original) {
         return info.getPart().getBlock().getRayTraceResult(info.getState(), info.getPartWorld(), info.getPartPos(), start, end, original);
     }
+
+    default IBlockState updatePostPlacement(PartInfo i, EnumFacing face, IBlockState facingState, BlockPos facingPos) {
+        return i.getState().updatePostPlacement(face, facingState, i.getPartWorld(), i.getPartPos(), facingPos);
+    }
 }
