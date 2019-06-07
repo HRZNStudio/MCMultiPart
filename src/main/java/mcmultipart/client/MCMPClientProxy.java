@@ -114,8 +114,8 @@ public class MCMPClientProxy extends MCMPCommonProxy {
                     double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
                     double y = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
                     double z = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
-                    WorldRenderer.drawShape(info.getPart().getRenderShape(info.getState(), info.getActualWorld(), info.getPartPos()).withOffset(pos.getX(), pos.getY(), pos.getZ()),
-                            -x, -y, -z, 1, 1, 1, 1);
+                    WorldRenderer.drawShape(info.getPart().getRenderShape(info).withOffset(pos.getX(), pos.getY(), pos.getZ()),
+                            -x, -y, -z, 0.0F, 0.0F, 0.0F, 0.4F);
                 }
 
                 GlStateManager.depthMask(true);
