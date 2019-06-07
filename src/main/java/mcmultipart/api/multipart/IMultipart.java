@@ -56,20 +56,16 @@ public interface IMultipart {
                         "The block " + getBlock().getRegistryName() + " is multipart-compatible but its TileEntity isn't!"));
     }
 
-    default VoxelShape getCollisionShape(IBlockState state, IBlockReader worldIn, BlockPos pos) {
-        return state.getCollisionShape(worldIn, pos);
+    default VoxelShape getCollisionShape(IPartInfo info) {
+        return info.getState().getCollisionShape(info.getPartWorld(), info.getPartPos());
     }
 
-    default VoxelShape getRenderShape(IBlockState state, IBlockReader worldIn, BlockPos pos) {
-        return state.getRenderShape(worldIn, pos);
+    default VoxelShape getRenderShape(IPartInfo info) {
+        return info.getState().getRenderShape(info.getPartWorld(), info.getPartPos());
     }
 
-    default VoxelShape getShape(IBlockState state, IBlockReader worldIn, BlockPos pos) {
-        return state.getShape(worldIn, pos);
-    }
-
-    default VoxelShape getRaytraceShape(IBlockState state, IBlockReader worldIn, BlockPos pos) {
-        return state.getRaytraceShape(worldIn, pos);
+    default VoxelShape getShape(IPartInfo info) {
+        return info.getState().getShape(info.getPartWorld(), info.getPartPos());
     }
 
     default IMultipartTile createMultipartTile(World world, IPartSlot slot, IBlockState state) {

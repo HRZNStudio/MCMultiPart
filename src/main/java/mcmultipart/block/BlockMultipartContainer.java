@@ -233,7 +233,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
                 if (!part.getPart().addHitEffects(part, (RayTraceResult) hit.hitInfo, manager)) {
                     if (part.getPart().getRenderType(part) != EnumBlockRenderType.INVISIBLE) {
                         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
-                        AxisAlignedBB aabb = part.getPart().getShape(part.getState(), part.getActualWorld(), part.getPartPos()).getBoundingBox();
+                        AxisAlignedBB aabb = part.getPart().getShape(part).getBoundingBox();
                         double pX = x + world.rand.nextDouble() * (aabb.maxX - aabb.minX - 0.2) + 0.1 + aabb.minX;
                         double pY = y + world.rand.nextDouble() * (aabb.maxY - aabb.minY - 0.2) + 0.1 + aabb.minY;
                         double pZ = z + world.rand.nextDouble() * (aabb.maxZ - aabb.minZ - 0.2) + 0.1 + aabb.minZ;
@@ -561,11 +561,16 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 
 
     @Override
+    public void onEntityCollision(IBlockState state, World worldIn, BlockPos pos, Entity entityIn) {
+        //TODO
+    }
+
+    @Override
     public VoxelShape getShape(IBlockState state, IBlockReader world, BlockPos pos) {
         return getTile(world, pos).map(tile -> {
             final VoxelShape[] shape = {VoxelShapes.empty()};
             tile.getParts().values().forEach(part -> {
-                shape[0] = VoxelShapes.or(shape[0], part.getPart().getShape(part.getState(), part.getPartWorld(), part.getPartPos()));
+                shape[0] = VoxelShapes.or(shape[0], part.getPart().getShape(part));
             });
             return shape[0];
         }).orElse(VoxelShapes.empty());
@@ -576,7 +581,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
         return getTile(world, pos).map(tile -> {
             final VoxelShape[] shape = {VoxelShapes.empty()};
             tile.getParts().values().forEach(part -> {
-                shape[0] = VoxelShapes.or(shape[0], part.getPart().getCollisionShape(part.getState(), part.getPartWorld(), part.getPartPos()));
+                shape[0] = VoxelShapes.or(shape[0], part.getPart().getCollisionShape(part));
             });
             return shape[0];
         }).orElse(VoxelShapes.empty());
