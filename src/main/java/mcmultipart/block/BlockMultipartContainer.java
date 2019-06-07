@@ -411,7 +411,7 @@ public class BlockMultipartContainer extends Block implements IMultipartContaine
 
     @Override
     public boolean isBurning(IBlockState state, IBlockReader world, BlockPos pos) {
-        return anyMatch(world,pos, i->i.getPart().isBurning(i));
+        return anyMatch(world, pos, i -> i.getPart().isBurning(i));
     }
 
     @Override

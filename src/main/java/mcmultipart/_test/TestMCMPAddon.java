@@ -49,14 +49,14 @@ public class TestMCMPAddon implements IMCMPAddon {
                     @Override
                     public IBlockState getStateForPlacement(BlockItemUseContext context) {
                         EnumFacing facing = context.getFace();
-                        BlockPos pos = !context.replacingClickedOnBlock()?context.getPos().offset(context.getFace().getOpposite()):context.getPos();
+                        BlockPos pos = !context.replacingClickedOnBlock() ? context.getPos().offset(context.getFace().getOpposite()) : context.getPos();
                         float hitX = context.getHitX();
-                        float hitY = context.getHitY()-pos.getY();
+                        float hitY = context.getHitY() - pos.getY();
                         float hitZ = context.getHitZ();
                         IBlockState state = block.getStateForPlacement(context);
-                        double x=Math.abs(hitY * facing.getYOffset());
-                        boolean top = state.get(BlockSlab.TYPE)==SlabType.TOP;
-                        return facing.getAxis() == EnumFacing.Axis.Y && x == 0.5D ? state.with(BlockSlab.TYPE, top? SlabType.BOTTOM:SlabType.TOP) : state;
+                        double x = Math.abs(hitY * facing.getYOffset());
+                        boolean top = state.get(BlockSlab.TYPE) == SlabType.TOP;
+                        return facing.getAxis() == EnumFacing.Axis.Y && x == 0.5D ? state.with(BlockSlab.TYPE, top ? SlabType.BOTTOM : SlabType.TOP) : state;
                     }
                 }).setPartPlacementLogic((context, multipartBlock, state) -> {
                     IPartSlot slot = multipartBlock.getSlotForPlacement(context, state);

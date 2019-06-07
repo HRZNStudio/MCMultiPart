@@ -2,7 +2,6 @@ package mcmultipart.api.addon;
 
 import mcmultipart.api.item.ItemBlockMultipart.IBlockPlacementInfo;
 import mcmultipart.api.item.ItemBlockMultipart.IBlockPlacementLogic;
-import mcmultipart.api.item.ItemBlockMultipart.IExtendedBlockPlacementInfo;
 import mcmultipart.api.item.ItemBlockMultipart.IPartPlacementLogic;
 
 public interface IWrappedBlock {
