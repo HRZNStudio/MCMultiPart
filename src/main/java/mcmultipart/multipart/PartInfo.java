@@ -222,7 +222,7 @@ public final class PartInfo implements IPartInfo {
 
     public void refreshWorld() {
         this.view = container != null && part.shouldWrapWorld() ? part.getWorldView(this) : null;
-        this.world = this.view != null && this.getActualWorld() != null? new MCMPWorldWrapper(this, this, this.view) : null;
+        this.world = this.view != null && this.getActualWorld() != null ? new MCMPWorldWrapper(this, this, this.view) : null;
         if (this.tile != null) {
             setTile(this.tile); // Refreshes the world, position and PartInfo
         }
@@ -238,6 +238,7 @@ public final class PartInfo implements IPartInfo {
         }
         return world;
     }
+
     public IBlockReader wrapAsNeeded(IBlockReader world) {
         if (view != null) {
             if (world == this.world || world == this.world.getActualWorld()) {
@@ -277,7 +278,7 @@ public final class PartInfo implements IPartInfo {
             renderLayers = EnumSet.noneOf(BlockRenderLayer.class);
             RENDER_LAYERS//
                     .stream()//
-                    .filter(layer -> part.canRenderInLayer(world_, pos, this, state, layer))//
+                    .filter(layer -> part.canRenderInLayer(this, state, layer))//
                     .forEach(renderLayers::add);
         } else {
             renderLayers = Collections.emptySet();

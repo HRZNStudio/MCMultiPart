@@ -13,6 +13,4 @@ public interface IWrappedBlock {
 
     IWrappedBlock setPlacementInfo(IBlockPlacementInfo info);
 
-    IWrappedBlock setPlacementInfo(IExtendedBlockPlacementInfo info);
-
 }

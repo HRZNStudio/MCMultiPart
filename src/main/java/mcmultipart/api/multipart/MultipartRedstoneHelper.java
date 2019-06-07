@@ -13,33 +13,33 @@ public class MultipartRedstoneHelper {
     // Multipart-only lookups
 
     public static boolean canConnectRedstone(IMultipartContainer container, EnumFacing side) {
-        return SlotUtil.viewContainer(container, i -> i.getPart().canConnectRedstone(i.getPartWorld(), i.getPartPos(), i, side),
+        return SlotUtil.viewContainer(container, i -> i.getPart().canConnectRedstone(i, side),
                 l -> l.stream().anyMatch(c -> c), false, true, side);
     }
 
     public static int getWeakPower(IMultipartContainer container, EnumFacing side) {
-        return SlotUtil.viewContainer(container, i -> i.getPart().getWeakPower(i.getPartWorld(), i.getPartPos(), i, side),
-                l -> l.stream().max(Integer::compare).get(), 0, true, side);
+        return SlotUtil.viewContainer(container, i -> i.getPart().getWeakPower(i, side),
+                l -> l.stream().max(Integer::compare).orElse(0), 0, true, side);
     }
 
     public static int getStrongPower(IMultipartContainer container, EnumFacing side) {
-        return SlotUtil.viewContainer(container, i -> i.getPart().getStrongPower(i.getPartWorld(), i.getPartPos(), i, side),
-                l -> l.stream().max(Integer::compare).get(), 0, true, side);
+        return SlotUtil.viewContainer(container, i -> i.getPart().getStrongPower(i, side),
+                l -> l.stream().max(Integer::compare).orElse(0), 0, true, side);
     }
 
     public static boolean canConnectRedstone(IMultipartContainer container, EnumEdgeSlot edge, EnumFacing side) {
-        return SlotUtil.viewContainer(container, i -> i.getPart().canConnectRedstone(i.getPartWorld(), i.getPartPos(), i, side),
+        return SlotUtil.viewContainer(container, i -> i.getPart().canConnectRedstone(i, side),
                 l -> l.stream().anyMatch(c -> c), false, true, edge, side);
     }
 
     public static int getWeakPower(IMultipartContainer container, EnumEdgeSlot edge, EnumFacing side) {
-        return SlotUtil.viewContainer(container, i -> i.getPart().getWeakPower(i.getPartWorld(), i.getPartPos(), i, side),
-                l -> l.stream().max(Integer::compare).get(), 0, true, edge, side);
+        return SlotUtil.viewContainer(container, i -> i.getPart().getWeakPower(i, side),
+                l -> l.stream().max(Integer::compare).orElse(0), 0, true, edge, side);
     }
 
     public static int getStrongPower(IMultipartContainer container, EnumEdgeSlot edge, EnumFacing side) {
-        return SlotUtil.viewContainer(container, i -> i.getPart().getStrongPower(i.getPartWorld(), i.getPartPos(), i, side),
-                l -> l.stream().max(Integer::compare).get(), 0, true, edge, side);
+        return SlotUtil.viewContainer(container, i -> i.getPart().getStrongPower(i, side),
+                l -> l.stream().max(Integer::compare).orElse(0), 0, true, edge, side);
     }
 
     // Multipart lookups with world fallback

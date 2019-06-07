@@ -15,10 +15,7 @@ import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumBlockRenderType;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.util.*;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
@@ -102,7 +99,7 @@ public interface IMultipart {
         return MultipartOcclusionHelper.testBoxIntersection(this.getOcclusionBoxes(self), otherPart.getPart().getOcclusionBoxes(otherPart));
     }
 
-    default boolean canRenderInLayer(IBlockReader world, BlockPos pos, IPartInfo part, IBlockState state, BlockRenderLayer layer) {
+    default boolean canRenderInLayer(IPartInfo part, IBlockState state, BlockRenderLayer layer) {
         return state.getBlock().canRenderInLayer(state, layer);
     }
 
@@ -123,24 +120,24 @@ public interface IMultipart {
     }
 
 
-    default boolean canConnectRedstone(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
-        return part.getState().getBlock().canConnectRedstone(part.getState(), world, pos, side);
+    default boolean canConnectRedstone(IPartInfo part, EnumFacing side) {
+        return part.getState().getBlock().canConnectRedstone(part.getState(), part.getPartWorld(), part.getPartPos(), side);
     }
 
-    default int getWeakPower(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
-        return part.getState().getWeakPower(world, pos, side);
+    default int getWeakPower(IPartInfo part, EnumFacing side) {
+        return part.getState().getWeakPower(part.getPartWorld(), part.getPartPos(), side);
     }
 
-    default int getStrongPower(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing side) {
-        return part.getState().getStrongPower(world, pos, side);
+    default int getStrongPower(IPartInfo part, EnumFacing side) {
+        return part.getState().getStrongPower(part.getPartWorld(), part.getPartPos(), side);
     }
 
-    default boolean canCreatureSpawn(IWorldReader world, BlockPos pos, IPartInfo part, EntitySpawnPlacementRegistry.SpawnPlacementType type, EntityType<? extends EntityLiving> entity) {
-        return part.getState().getBlock().canCreatureSpawn(part.getState(), world, pos, type, entity);
+    default boolean canCreatureSpawn(IPartInfo part, EntitySpawnPlacementRegistry.SpawnPlacementType type, EntityType<? extends EntityLiving> entity) {
+        return part.getState().getBlock().canCreatureSpawn(part.getState(), part.getPartWorld(), part.getPartPos(), type, entity);
     }
 
-    default boolean canSustainPlant(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing direction, IPlantable plantable) {
-        return part.getState().getBlock().canSustainPlant(part.getState(), world, pos, direction, plantable);
+    default boolean canSustainPlant(IPartInfo part, EnumFacing direction, IPlantable plantable) {
+        return part.getState().getBlock().canSustainPlant(part.getState(), part.getPartWorld(), part.getPartPos(), direction, plantable);
     }
 
     default void fillWithRain(IPartInfo part) {
@@ -151,9 +148,8 @@ public interface IMultipart {
         return part.getState().getComparatorInputOverride(part.getPartWorld(), part.getPartPos());
     }
 
-    default List<ItemStack> getDrops(IBlockReader world, BlockPos pos, IPartInfo part, int fortune) {
-//        return part.getState().getBlock().getDrops(part.getState(), world, pos, fortune);/**/
-        return Collections.emptyList(); //TODO
+    default void getDrops(NonNullList<ItemStack> list, IPartInfo part, int fortune) {
+        part.getState().getDrops(list, part.getPartWorld(), part.getPartPos(), fortune);
     }
 
     default float getExplosionResistance(IPartInfo part, Entity exploder, Explosion explosion) {
@@ -164,12 +160,12 @@ public interface IMultipart {
         return part.getState().getBlock().getEnchantPowerBonus(part.getState(), part.getPartWorld(), part.getPartPos());
     }
 
-    default int getLightOpacity(IBlockReader world, BlockPos pos, IPartInfo part) {
-        return part.getState().getOpacity(world, pos);
+    default int getLightOpacity(IPartInfo part) {
+        return part.getState().getOpacity(part.getPartWorld(), part.getPartPos());
     }
 
-    default int getLightValue(IWorldReader world, BlockPos pos, IPartInfo part) {
-        return part.getState().getLightValue(world, pos);
+    default int getLightValue(IPartInfo part) {
+        return part.getState().getLightValue(part.getPartWorld(), part.getPartPos());
     }
 
     default int getLightValue(IBlockState state) {
@@ -184,12 +180,12 @@ public interface IMultipart {
         return part.getState().getPlayerRelativeBlockHardness(player, part.getPartWorld(), part.getPartPos());
     }
 
-    default boolean isBeaconBase(IWorldReader world, BlockPos pos, IPartInfo part, BlockPos beacon) {
-        return part.getState().getBlock().isBeaconBase(part.getState(), world, pos, beacon);
+    default boolean isBeaconBase(IPartInfo part, BlockPos beacon) {
+        return part.getState().getBlock().isBeaconBase(part.getState(), part.getPartWorld(), part.getPartPos(), beacon);
     }
 
-    default boolean isBurning(IBlockReader world, BlockPos pos, IPartInfo part) {
-        return part.getState().getBlock().isBurning(part.getState(), world, pos);
+    default boolean isBurning(IPartInfo part) {
+        return part.getState().getBlock().isBurning(part.getState(), part.getPartWorld(), part.getPartPos());
     }
 
     default boolean isFertile(IPartInfo part) {
@@ -200,16 +196,16 @@ public interface IMultipart {
         return part.getState().getBlock().isFireSource(part.getState(), part.getPartWorld(), part.getPartPos(), side);
     }
 
-    default boolean isFlammable(IBlockReader world, BlockPos pos, IPartInfo part, EnumFacing face) {
-        return part.getState().getBlock().isFlammable(part.getState(), world, pos, face);
+    default boolean isFlammable(IPartInfo part, EnumFacing face) {
+        return part.getState().getBlock().isFlammable(part.getState(), part.getPartWorld(), part.getPartPos(), face);
     }
 
-    default boolean isFoliage(IWorldReader world, BlockPos pos, IPartInfo part) {
-        return part.getState().getBlock().isFoliage(part.getState(), world, pos);
+    default boolean isFoliage(IPartInfo part) {
+        return part.getState().getBlock().isFoliage(part.getState(), part.getPartWorld(), part.getPartPos());
     }
 
-    default boolean isLadder(IWorldReader world, BlockPos pos, IPartInfo part, EntityLivingBase entity) {
-        return part.getState().getBlock().isLadder(part.getState(), world, pos, entity);
+    default boolean isLadder(IPartInfo part, EntityLivingBase entity) {
+        return part.getState().getBlock().isLadder(part.getState(), part.getPartWorld(), part.getPartPos(), entity);
     }
 
 

@@ -76,21 +76,22 @@ public class ItemBlockMultipart extends ItemBlock {
         }
     }
 
+    public static boolean place(BlockItemUseContext context, IMultipart value, IBlockState state) {
+        IPartSlot slot = value.getSlotForPlacement(context, state);
+        if (MultipartHelper.addPart(context.getWorld(), context.getPos(), slot, state, context.getWorld().isRemote)) {
+            SoundType soundtype = state.getSoundType(context.getWorld(), context.getPos(), context.getPlayer());
+            context.getWorld().playSound(context.getPlayer(), context.getPos(), soundtype.getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
+            return true;
+        }
+        return false;
+    }
+
     public static EnumActionResult place(BlockItemUseContext context, IBlockPlacementInfo placementInfo, IMultipart value, IBlockPlacementLogic blockPlacementLogic, IPartPlacementLogic partPlacementLogic) {
-        BlockPos pos = context.getPos();
-        World world = context.getWorld();
-        EntityPlayer player = context.getPlayer();
         IBlockState state = placementInfo.getStateForPlacement(context);
         if (state == null)
             return EnumActionResult.PASS;
         value = MultipartRegistry.INSTANCE.getPart(state.getBlock());
-        IPartSlot slot = value.getSlotForPlacement(context, state);
-        if (MultipartHelper.addPart(world, pos, slot, state, world.isRemote)) {
-            SoundType soundtype = state.getSoundType(world, pos, player);
-            world.playSound(player, pos, soundtype.getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
-            return EnumActionResult.SUCCESS;
-        }
-        return EnumActionResult.PASS;
+        return partPlacementLogic.placePart(context, value, state) ? EnumActionResult.SUCCESS : EnumActionResult.PASS;
     }
 
     @Override
@@ -102,7 +103,7 @@ public class ItemBlockMultipart extends ItemBlock {
     public EnumActionResult tryPlace(BlockItemUseContext context) {
         IBlockState iblockstate = this.getStateForPlacement(context);
 
-        if (iblockstate!=null&&placeBlock(context, iblockstate)) {
+        if (iblockstate != null && placeBlock(context, iblockstate)) {
             BlockPos blockpos = context.getPos();
             World world = context.getWorld();
             EntityPlayer entityplayer = context.getPlayer();
@@ -113,7 +114,7 @@ public class ItemBlockMultipart extends ItemBlock {
                 this.onBlockPlaced(blockpos, world, entityplayer, itemstack, iblockstate1);
                 block.onBlockPlacedBy(world, blockpos, iblockstate1, entityplayer, itemstack);
                 if (entityplayer instanceof EntityPlayerMP) {
-                    CriteriaTriggers.PLACED_BLOCK.trigger((EntityPlayerMP)entityplayer, blockpos, itemstack);
+                    CriteriaTriggers.PLACED_BLOCK.trigger((EntityPlayerMP) entityplayer, blockpos, itemstack);
                 }
             }
 

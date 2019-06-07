@@ -64,20 +64,15 @@ import java.util.stream.Stream;
 public class MCMultiPart {
 
     public static final String MODID = "mcmultipart", NAME = "MCMultiPart", VERSION = "%VERSION%";
-
-    public static MCMPCommonProxy proxy;
-
-    public static Logger log;
-
-    public static Block multipart;
-
     public static final SimpleChannel channel = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MCMultiPart.MODID, "network"),
             () -> "1.0.0",
             s -> s.equals("1.0.0"),
             s -> s.equals("1.0.0")
     );
-
+    public static MCMPCommonProxy proxy;
+    public static Logger log;
+    public static Block multipart;
     public static ForgeRegistry<IPartSlot> slotRegistry;
     public static ForgeRegistry<MicroMaterial> microMaterialRegistry;
     public static ForgeRegistry<MicroblockType> microblockTypeRegistry;

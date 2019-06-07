@@ -69,7 +69,7 @@ public abstract class PartSlot extends ForgeRegistryEntry<IPartSlot> implements 
         private final EnumFacing face1, face2, face3;
 
         CornerSlot(String name, EnumFacing face1, EnumFacing face2, EnumFacing face3) {
-            setRegistryName("corner_"+name.toLowerCase());
+            setRegistryName("corner_" + name.toLowerCase());
             this.face1 = face1;
             this.face2 = face2;
             this.face3 = face3;

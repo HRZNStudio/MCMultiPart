@@ -9,8 +9,6 @@ import mcmultipart.api.item.ItemBlockMultipart.IExtendedBlockPlacementInfo;
 import mcmultipart.api.item.ItemBlockMultipart.IPartPlacementLogic;
 import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.multipart.IMultipartRegistry;
-import mcmultipart.api.multipart.IMultipartTile;
-import mcmultipart.api.multipart.MultipartHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.item.BlockItemUseContext;
@@ -71,13 +69,7 @@ public enum MultipartRegistry implements IMultipartRegistry {
     public final class WrappedBlock implements IWrappedBlock {
 
         private IBlockPlacementLogic blockPlacementLogic;
-        private IPartPlacementLogic partPlacementLogic = new IPartPlacementLogic() {
-            @Override
-            public boolean placePart(BlockItemUseContext context, IMultipart multipartBlock, IBlockState state) {
-                System.out.println("test placement");
-                return false;
-            }
-        };// = ItemBlockMultipart::placePartAt;
+        private IPartPlacementLogic partPlacementLogic = ItemBlockMultipart::place;
         private IBlockPlacementInfo placementInfo;
 
         @Override
@@ -95,15 +87,6 @@ public enum MultipartRegistry implements IMultipartRegistry {
         @Override
         public IWrappedBlock setPlacementInfo(IBlockPlacementInfo info) {
             this.placementInfo = info;
-            return this;
-        }
-
-        @Override
-        public IWrappedBlock setPlacementInfo(IExtendedBlockPlacementInfo info) {
-            IBlockPlacementInfo prevInfo = this.placementInfo;
-            this.placementInfo = (context) -> info.getStateForPlacement(context.getWorld(), context.getPos(), context.getFace(),
-                    context.getHitX(), context.getHitY(), context.getHitZ(), context.getPlayer(),
-                    prevInfo.getStateForPlacement(context));
             return this;
         }
 

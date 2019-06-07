@@ -17,7 +17,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
@@ -115,7 +114,7 @@ public class MCMPClientProxy extends MCMPCommonProxy {
                     double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
                     double y = player.lastTickPosY + (player.posY - player.lastTickPosY) * partialTicks;
                     double z = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * partialTicks;
-                    WorldRenderer.drawShape(info.getPart().getRenderShape(info.getState(), info.getActualWorld(), info.getPartPos()).withOffset(pos.getX(), pos.getY(),pos.getZ()),
+                    WorldRenderer.drawShape(info.getPart().getRenderShape(info.getState(), info.getActualWorld(), info.getPartPos()).withOffset(pos.getX(), pos.getY(), pos.getZ()),
                             -x, -y, -z, 1, 1, 1, 1);
                 }
 

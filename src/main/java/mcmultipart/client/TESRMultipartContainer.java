@@ -87,7 +87,7 @@ public class TESRMultipartContainer extends TileEntityRenderer<TileMultipartCont
                                 buffer.noColor();
 
                                 for (BlockRenderLayer layer : BlockRenderLayer.values()) {
-                                    if (info.getPart().canRenderInLayer(info.getPartWorld(), info.getPartPos(), info, state, layer)) {
+                                    if (info.getPart().canRenderInLayer(info, state, layer)) {
                                         ForgeHooksClient.setRenderLayer(layer);
                                         Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModel(
                                                 te.getPartWorld(),
