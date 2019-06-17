@@ -4,7 +4,8 @@ import mcmultipart.api.slot.EnumEdgeSlot;
 import mcmultipart.api.slot.EnumSlotAccess;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.api.slot.ISlottedContainer;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Direction;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.RegistryManager;
 
@@ -16,8 +17,8 @@ public enum SlotRegistry {
 
     INSTANCE;
 
-    private final Map<EnumFacing, List<Entry<IPartSlot, EnumSlotAccess>>> accessFace = new IdentityHashMap<>();
-    private final Map<EnumEdgeSlot, Map<EnumFacing, List<Entry<IPartSlot, EnumSlotAccess>>>> accessEdge = new IdentityHashMap<>();
+    private final Map<Direction, List<Entry<IPartSlot, EnumSlotAccess>>> accessFace = new IdentityHashMap<>();
+    private final Map<EnumEdgeSlot, Map<Direction, List<Entry<IPartSlot, EnumSlotAccess>>>> accessEdge = new IdentityHashMap<>();
     private final List<Entry<IPartSlot, EnumSlotAccess>> mergeAll = new ArrayList<>();
 
     private ForgeRegistry<IPartSlot> slotRegistry;
@@ -28,7 +29,7 @@ public enum SlotRegistry {
 
         slots.forEach(s -> mergeAll.add(new AbstractMap.SimpleEntry<>(s, EnumSlotAccess.MERGE)));
 
-        for (EnumFacing face : EnumFacing.values()) {
+        for (Direction face : Direction.values()) {
             List<Entry<IPartSlot, EnumSlotAccess>> accesses = new ArrayList<>();
             for (IPartSlot slot : slots) {
                 EnumSlotAccess access = slot.getFaceAccess(face);
@@ -41,8 +42,8 @@ public enum SlotRegistry {
         }
 
         for (EnumEdgeSlot edge : EnumEdgeSlot.VALUES) {
-            Map<EnumFacing, List<Entry<IPartSlot, EnumSlotAccess>>> map = new IdentityHashMap<>();
-            for (EnumFacing face : EnumFacing.values()) {
+            Map<Direction, List<Entry<IPartSlot, EnumSlotAccess>>> map = new IdentityHashMap<>();
+            for (Direction face : Direction.values()) {
                 List<Entry<IPartSlot, EnumSlotAccess>> accesses = new ArrayList<>();
                 for (IPartSlot slot : slots) {
                     EnumSlotAccess access = slot.getEdgeAccess(edge, face);
@@ -58,11 +59,11 @@ public enum SlotRegistry {
         }
     }
 
-    public List<Entry<IPartSlot, EnumSlotAccess>> getAccessPriorities(EnumFacing face) {
+    public List<Entry<IPartSlot, EnumSlotAccess>> getAccessPriorities(Direction face) {
         return face == null ? mergeAll : accessFace.get(face);
     }
 
-    public List<Entry<IPartSlot, EnumSlotAccess>> getAccessPriorities(EnumEdgeSlot edge, EnumFacing face) {
+    public List<Entry<IPartSlot, EnumSlotAccess>> getAccessPriorities(EnumEdgeSlot edge, Direction face) {
         return face == null || edge == null ? mergeAll : accessEdge.get(edge).get(face);
     }
 
@@ -91,12 +92,12 @@ public enum SlotRegistry {
     }
 
     public <T, O> O viewContainer(ISlottedContainer<T> container, Function<T, O> converter, Function<List<O>, O> joiner, O startVal,
-                                  boolean ignoreNull, EnumFacing face) {
+                                  boolean ignoreNull, Direction face) {
         return viewContainer(container, converter, joiner, startVal, ignoreNull, getAccessPriorities(face));
     }
 
     public <T, O> O viewContainer(ISlottedContainer<T> container, Function<T, O> converter, Function<List<O>, O> joiner, O startVal,
-                                  boolean ignoreNull, EnumEdgeSlot edge, EnumFacing face) {
+                                  boolean ignoreNull, EnumEdgeSlot edge, Direction face) {
         return viewContainer(container, converter, joiner, startVal, ignoreNull, getAccessPriorities(edge, face));
     }
 

@@ -1,15 +1,15 @@
 package mcmultipart.api.slot;
 
 import lombok.experimental.Delegate;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 
 public enum EnumFaceSlot {
-    DOWN(new PartSlot.FaceSlot(EnumFacing.DOWN)),
-    UP(new PartSlot.FaceSlot(EnumFacing.UP)),
-    NORTH(new PartSlot.FaceSlot(EnumFacing.NORTH)),
-    SOUTH(new PartSlot.FaceSlot(EnumFacing.SOUTH)),
-    WEST(new PartSlot.FaceSlot(EnumFacing.WEST)),
-    EAST(new PartSlot.FaceSlot(EnumFacing.EAST));
+    DOWN(new PartSlot.FaceSlot(Direction.DOWN)),
+    UP(new PartSlot.FaceSlot(Direction.UP)),
+    NORTH(new PartSlot.FaceSlot(Direction.NORTH)),
+    SOUTH(new PartSlot.FaceSlot(Direction.SOUTH)),
+    WEST(new PartSlot.FaceSlot(Direction.WEST)),
+    EAST(new PartSlot.FaceSlot(Direction.EAST));
 
     public static final EnumFaceSlot[] VALUES = values();
 
@@ -20,7 +20,7 @@ public enum EnumFaceSlot {
         this.slot = slot;
     }
 
-    public static EnumFaceSlot fromFace(EnumFacing face) {
+    public static EnumFaceSlot fromFace(Direction face) {
         return VALUES[face.ordinal()];
     }
 

@@ -12,8 +12,8 @@ import mcmultipart.api.world.IMultipartBlockReader;
 import mcmultipart.api.world.IMultipartWorld;
 import mcmultipart.network.MultipartNetworkHandler;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
@@ -35,7 +35,7 @@ public final class MultipartHelper {
     private MultipartHelper() {
     }
 
-    public static boolean addPart(World world, BlockPos pos, IPartSlot slot, IBlockState state, boolean simulated) {
+    public static boolean addPart(World world, BlockPos pos, IPartSlot slot, BlockState state, boolean simulated) {
         IMultipart part = getPart.apply(state.getBlock());
         Preconditions.checkState(part != null, "The blockstate " + state + " could not be converted to a multipart!");
         IMultipartTile tile = part.createMultipartTile(world, slot, state);
@@ -62,7 +62,7 @@ public final class MultipartHelper {
     public static Optional<IPartInfo> getInfo(IBlockReader world, BlockPos pos, IPartSlot slot) {
         return getContainer(world, pos).map(c -> c.get(slot)).orElseGet(() -> {
             if (world instanceof World) {
-                IBlockState state = world.getBlockState(pos);
+                BlockState state = world.getBlockState(pos);
                 IMultipart part = getPart.apply(state.getBlock());
                 if (part != null && part.getSlotFromWorld(world, pos, state) == slot) {
                     return Optional.of(new DummyPartInfo((World) world, pos, slot, state, part));
@@ -90,7 +90,7 @@ public final class MultipartHelper {
         });
     }
 
-    public static Optional<IBlockState> getPartState(IBlockReader world, BlockPos pos, IPartSlot slot) {
+    public static Optional<BlockState> getPartState(IBlockReader world, BlockPos pos, IPartSlot slot) {
         return getContainer(world, pos).map(c -> c.getState(slot)).orElseGet(() -> Optional.of(world.getBlockState(pos)));
     }
 
@@ -101,7 +101,7 @@ public final class MultipartHelper {
                 return te.getCapability(MCMPCapabilities.MULTIPART_CONTAINER);
             }
         } else if (world instanceof World) {
-            IBlockState state = world.getBlockState(pos);
+            BlockState state = world.getBlockState(pos);
             IMultipart part = getPart.apply(state.getBlock());
             if (part != null) {
                 return LazyOptional.of(() -> new DummyPartInfo((World) world, pos, part.getSlotFromWorld(world, pos, state), state, part)).cast();
@@ -111,7 +111,7 @@ public final class MultipartHelper {
     }
 
     public static LazyOptional<IMultipartContainer> getOrConvertContainer(World world, BlockPos pos) {
-        IBlockState state = world.getBlockState(pos);
+        BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof IMultipartContainerBlock) {
             TileEntity te = world.getTileEntity(pos);
             if (te != null) {
@@ -145,12 +145,12 @@ public final class MultipartHelper {
         private final World world;
         private final BlockPos pos;
         private final IPartSlot slot;
-        private final IBlockState state;
+        private final BlockState state;
         private final IMultipart part;
         private final Supplier<IMultipartTile> tile;
         private final Supplier<Map<IPartSlot, ? extends IPartInfo>> parts;
 
-        public DummyPartInfo(World world, BlockPos pos, IPartSlot slot, IBlockState state, IMultipart part) {
+        public DummyPartInfo(World world, BlockPos pos, IPartSlot slot, BlockState state, IMultipart part) {
             this.world = world;
             this.pos = pos;
             this.slot = slot;
@@ -192,7 +192,7 @@ public final class MultipartHelper {
         }
 
         @Override
-        public IBlockState getState() {
+        public BlockState getState() {
             return this.state;
         }
 
@@ -212,12 +212,12 @@ public final class MultipartHelper {
         }
 
         @Override
-        public boolean canAddPart(IPartSlot slot, IBlockState state, IMultipartTile tile) {
+        public boolean canAddPart(IPartSlot slot, BlockState state, IMultipartTile tile) {
             return MultipartHelper.addPart(this.world, this.pos, slot, state, true);
         }
 
         @Override
-        public void addPart(IPartSlot slot, IBlockState state, IMultipartTile tile) {
+        public void addPart(IPartSlot slot, BlockState state, IMultipartTile tile) {
             MultipartHelper.addPart(this.world, this.pos, slot, state, false);
         }
 

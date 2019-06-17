@@ -5,7 +5,7 @@ import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.world.IMultipartBlockReader;
 import mcmultipart.api.world.IWorldView;
 import mcmultipart.multipart.PartInfo;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
@@ -39,12 +39,12 @@ public class MCMPBlockReaderWrapper implements IBlockReader, IMultipartBlockRead
     }
 
     @Override
-    public IBlockState getBlockState(BlockPos pos) {
+    public BlockState getBlockState(BlockPos pos) {
         return view.getActualState(parent, pos);
     }
 
     private interface Ignore {
-        IBlockState getBlockState(BlockPos pos);
+        BlockState getBlockState(BlockPos pos);
 
         TileEntity getTileEntity(BlockPos pos);
     }

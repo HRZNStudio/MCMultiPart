@@ -4,7 +4,7 @@ import mcmultipart.api.container.IMultipartContainer;
 import mcmultipart.api.slot.EnumEdgeSlot;
 import mcmultipart.api.slot.SlotUtil;
 import mcmultipart.capability.CapabilityJoiner;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
 
@@ -20,7 +20,7 @@ public class MultipartCapabilityHelper {
         registerJoiner.accept(capability, joiner);
     }
 
-    public static <T> LazyOptional<T> getCapability(IMultipartContainer container, Capability<T> capability, EnumFacing face) {
+    public static <T> LazyOptional<T> getCapability(IMultipartContainer container, Capability<T> capability, Direction face) {
         T v = SlotUtil.viewContainer(container, i -> {
             if (i.getTile() != null) {
                 LazyOptional<T> optional = i.getTile().getPartCapability(capability, face);
@@ -38,7 +38,7 @@ public class MultipartCapabilityHelper {
         return LazyOptional.empty();
     }
 
-    public static <T> LazyOptional<T> getCapability(IMultipartContainer container, Capability<T> capability, EnumEdgeSlot edge, EnumFacing face) {
+    public static <T> LazyOptional<T> getCapability(IMultipartContainer container, Capability<T> capability, EnumEdgeSlot edge, Direction face) {
         T v = SlotUtil.viewContainer(container, i -> {
             if (i.getTile() != null) {
                 LazyOptional<T> optional = i.getTile().getPartCapability(capability, face);

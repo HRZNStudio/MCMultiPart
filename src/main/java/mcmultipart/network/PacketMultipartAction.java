@@ -2,9 +2,9 @@ package mcmultipart.network;
 
 import mcmultipart.MCMultiPart;
 import mcmultipart.api.slot.IPartSlot;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 
@@ -23,12 +23,12 @@ public class PacketMultipartAction extends Packet<PacketMultipartAction> {
     }
 
     @Override
-    public void handleClient(EntityPlayer player) {
+    public void handleClient(PlayerEntity player) {
         changes.getChanges().forEach(it -> it.handlePacket(player));
     }
 
     @Override
-    public void handleServer(EntityPlayer player) {
+    public void handleServer(PlayerEntity player) {
     }
 
     /*
@@ -104,8 +104,8 @@ public class PacketMultipartAction extends Packet<PacketMultipartAction> {
 
             IPartSlot slot = MCMultiPart.slotRegistry.getValue(slotId);
 
-            IBlockState state = null;
-            NBTTagCompound nbt = null;
+            BlockState state = null;
+            CompoundNBT nbt = null;
 
             if (type == MultipartAction.Add.TYPE || type == MultipartAction.Change.TYPE) {
                 int value = buf.readVarInt();

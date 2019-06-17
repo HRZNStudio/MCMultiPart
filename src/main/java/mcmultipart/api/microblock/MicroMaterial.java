@@ -1,13 +1,13 @@
 package mcmultipart.api.microblock;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.SoundType;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
@@ -41,20 +41,19 @@ public abstract class MicroMaterial extends ForgeRegistryEntry<MicroMaterial> {
 
     public abstract ItemStack getStack();
 
-    public abstract SoundType getSound(IBlockState state, World world, BlockPos pos, Entity entity);
+    public abstract SoundType getSound(BlockState state, World world, BlockPos pos, Entity entity);
 
-    public abstract IBlockState getDefaultState();
+    public abstract BlockState getDefaultState();
 
-    public abstract IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ,
-                                                     EntityLivingBase placer, EnumHand hand);
+    public abstract BlockState getStateForPlacement(World world, BlockPos pos, Direction facing, float hitX, float hitY, float hitZ, LivingEntity placer, Hand hand);
 
-    public abstract IBlockState getActualState(IWorldReader world, BlockPos pos, IBlockState state);
+    public abstract BlockState getActualState(IWorldReader world, BlockPos pos, BlockState state);
 
-    public IBlockState getExtendedState(IWorldReader world, BlockPos pos, IBlockState state) {
+    public BlockState getExtendedState(IWorldReader world, BlockPos pos, BlockState state) {
         return state;
     }
 
-    public boolean canRenderInLayer(IBlockState state, BlockRenderLayer layer) {
+    public boolean canRenderInLayer(BlockState state, BlockRenderLayer layer) {
         return layer == BlockRenderLayer.SOLID;
     }
 

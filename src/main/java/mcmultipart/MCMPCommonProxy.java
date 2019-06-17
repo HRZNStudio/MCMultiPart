@@ -6,16 +6,18 @@ import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.multipart.MultipartRegistry;
 import mcmultipart.multipart.MultipartRegistry.WrappedBlock;
 import mcmultipart.network.MultipartNetworkHandler;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemBucket;
+import net.minecraft.item.BucketItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.item.ItemUseContext;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.stats.StatList;
-import net.minecraft.util.EnumActionResult;
+import net.minecraft.stats.Stats;
+import net.minecraft.util.ActionResultType;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.util.BlockSnapshot;
 import net.minecraftforge.event.ForgeEventFactory;
@@ -37,7 +39,7 @@ public class MCMPCommonProxy {
     public void init() {
     }
 
-    public EntityPlayer getPlayer() {
+    public PlayerEntity getPlayer() {
         return null;
     }
 
@@ -47,7 +49,7 @@ public class MCMPCommonProxy {
 
     public void scheduleTick(Runnable runnable, Dist side) {
         if (side == Dist.DEDICATED_SERVER) {
-            ((MinecraftServer) LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER)).addScheduledTask(runnable);
+            ((MinecraftServer) LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER)).func_213207_aT().execute(runnable);
         }
     }
 
@@ -60,44 +62,46 @@ public class MCMPCommonProxy {
 
     @SubscribeEvent
     public void onPlayerRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        EntityPlayer player = event.getEntityPlayer();
-        if (event.getHitVec() == null || event.getWorld() == null || event.getFace() == null || player == null) {
+        PlayerEntity player = event.getEntityPlayer();
+        if (event.getWorld() == null || event.getFace() == null || player == null) {
             return;
         }
         ItemStack stack = player.getHeldItem(event.getHand());
         if (!stack.isEmpty()) {
             Pair<WrappedBlock, IMultipart> info = MultipartRegistry.INSTANCE.wrapPlacement(stack);
-            if (info != null && info.getKey().getBlockPlacementLogic() != null) {
-                EnumActionResult result = placePart(new BlockItemUseContext(event.getWorld(), player, stack, event.getPos(), event.getFace(), (float) event.getHitVec().x,
-                        (float) event.getHitVec().y, (float) event.getHitVec().z), info);
-                if (result != EnumActionResult.PASS) {
-                    event.setCancellationResult(result);
-                    event.setCanceled(true);
+            BlockRayTraceResult result = (BlockRayTraceResult) player.func_213324_a(10, 0, false);
+            if (result.getType() != BlockRayTraceResult.Type.MISS && result.getHitVec() != null) {
+                if (info != null && info.getKey().getBlockPlacementLogic() != null) {
+                    ActionResultType r = placePart(new BlockItemUseContext(new ItemUseContext(player, event.getHand(), result)), info);
+                    if (r != ActionResultType.PASS) {
+                        event.setCancellationResult(r);
+                        event.setCanceled(true);
+                    }
                 }
             }
         }
     }
 
-    private EnumActionResult placePart(BlockItemUseContext context, @Nonnull Pair<WrappedBlock, IMultipart> info) {
+    private ActionResultType placePart(BlockItemUseContext context, @Nonnull Pair<WrappedBlock, IMultipart> info) {
         ItemStack itemstack = context.getItem();
         int size = itemstack.getCount();
-        NBTTagCompound nbt = null;
+        CompoundNBT nbt = null;
         if (itemstack.hasTag()) {
             nbt = itemstack.getTag().copy();
         }
 
-        if (!(itemstack.getItem() instanceof ItemBucket)) // if not bucket
+        if (!(itemstack.getItem() instanceof BucketItem)) // if not bucket
         {
             context.getWorld().captureBlockSnapshots = true;
         }
-        EnumActionResult ret = ItemBlockMultipart.place(context, info.getKey().getPlacementInfo(), info.getValue(),
+        ActionResultType ret = ItemBlockMultipart.place(context, info.getKey().getPlacementInfo(), info.getValue(),
                 info.getKey().getBlockPlacementLogic(), info.getKey().getPartPlacementLogic());
         context.getWorld().captureBlockSnapshots = false;
 
-        if (ret == EnumActionResult.SUCCESS) {
+        if (ret == ActionResultType.SUCCESS) {
             // save new item data
             int newSize = itemstack.getCount();
-            NBTTagCompound newNBT = null;
+            CompoundNBT newNBT = null;
             if (itemstack.getTag() != null) {
                 newNBT = itemstack.getTag().copy();
             }
@@ -118,7 +122,7 @@ public class MCMPCommonProxy {
             }
 
             if (placeEvent) {
-                ret = EnumActionResult.FAIL; // cancel placement
+                ret = ActionResultType.FAIL; // cancel placement
                 // revert back all captured blocks
                 for (BlockSnapshot blocksnapshot : Lists.reverse(blockSnapshots)) {
                     context.getWorld().restoringBlockSnapshots = true;
@@ -134,16 +138,16 @@ public class MCMPCommonProxy {
 
                 for (BlockSnapshot snap : blockSnapshots) {
                     int updateFlag = snap.getFlag();
-                    IBlockState oldBlock = snap.getReplacedBlock();
-                    IBlockState newBlock = context.getWorld().getBlockState(snap.getPos());
+                    BlockState oldBlock = snap.getReplacedBlock();
+                    BlockState newBlock = context.getWorld().getBlockState(snap.getPos());
                     if (!newBlock.getBlock().hasTileEntity(newBlock)) // Containers get placed automatically
                     {
-                        newBlock.getBlock().onBlockAdded(newBlock, context.getWorld(), snap.getPos(), oldBlock);
+                        newBlock.getBlock().onBlockAdded(newBlock, context.getWorld(), snap.getPos(), oldBlock, false);
                     }
 
                     context.getWorld().markAndNotifyBlock(snap.getPos(), null, oldBlock, newBlock, updateFlag);
                 }
-                context.getPlayer().addStat(StatList.ITEM_USED.get(itemstack.getItem()));
+                context.getPlayer().addStat(Stats.ITEM_USED.get(itemstack.getItem()));
             }
         }
         context.getWorld().capturedBlockSnapshots.clear();

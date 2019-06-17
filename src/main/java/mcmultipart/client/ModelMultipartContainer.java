@@ -2,7 +2,7 @@ package mcmultipart.client;
 
 import mcmultipart.block.BlockMultipartContainer;
 import mcmultipart.multipart.PartInfo;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.model.BakedQuad;
@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.model.ItemOverrideList;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.client.model.data.IModelData;
 
@@ -31,7 +31,7 @@ public class ModelMultipartContainer implements IBakedModel {
 
     @Nonnull
     @Override
-    public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, @Nonnull Random rand, @Nonnull IModelData extraData) {
+    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, @Nonnull Random rand, @Nonnull IModelData extraData) {
         List<PartInfo.ClientInfo> info = extraData.getData(BlockMultipartContainer.PROPERTY_INFO);
         BlockRendererDispatcher brd = Minecraft.getInstance().getBlockRendererDispatcher();
         if (info != null) {
@@ -48,7 +48,7 @@ public class ModelMultipartContainer implements IBakedModel {
     }
 
     @Override
-    public List<BakedQuad> getQuads(@Nullable IBlockState state, @Nullable EnumFacing side, Random rand) {
+    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, Random rand) {
         return Collections.emptyList();
     }
 
@@ -69,7 +69,7 @@ public class ModelMultipartContainer implements IBakedModel {
 
     @Override
     public TextureAtlasSprite getParticleTexture() {
-        return Minecraft.getInstance().getTextureMap().getAtlasSprite("minecraft:blocks/stone");
+        return Minecraft.getInstance().getAtlasTexture().getAtlasSprite("minecraft:blocks/stone");
     }
 
     @Override

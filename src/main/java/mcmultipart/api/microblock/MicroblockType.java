@@ -1,6 +1,6 @@
 package mcmultipart.api.microblock;
 
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.IWorldReader;
@@ -23,10 +23,10 @@ public abstract class MicroblockType extends ForgeRegistryEntry<MicroblockType> 
 
     public abstract int getSize(ItemStack stack);
 
-    public abstract boolean place(World world, EntityPlayer player, ItemStack stack, RayTraceResult hit);
+    public abstract boolean place(World world, PlayerEntity player, ItemStack stack, RayTraceResult hit);
 
     @OnlyIn(Dist.CLIENT)
-    public abstract void drawPlacement(IWorldReader world, EntityPlayer player, ItemStack stack, RayTraceResult hit);
+    public abstract void drawPlacement(IWorldReader world, PlayerEntity player, ItemStack stack, RayTraceResult hit);
 
     public int getMinSize() {
         return 1;

@@ -18,14 +18,18 @@ import mcmultipart.multipart.PartInfo;
 import mcmultipart.network.MultipartAction;
 import mcmultipart.network.MultipartNetworkHandler;
 import mcmultipart.util.WorldExt;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.*;
+import net.minecraft.util.Direction;
+import net.minecraft.util.Mirror;
+import net.minecraft.util.ObjectIntIdentityMap;
+import net.minecraft.util.Rotation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -48,7 +52,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
 
     private final Map<IPartSlot, PartInfo> parts = new ConcurrentHashMap<>(), partView = Collections.unmodifiableMap(parts);
     private boolean isInWorld = true;
-    private Map<IPartSlot, NBTTagCompound> missingParts;
+    private Map<IPartSlot, CompoundNBT> missingParts;
     private World loadingWorld;
 
     private TileMultipartContainer(TileEntityType tileEntityType, World world, BlockPos pos) {
@@ -131,7 +135,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     @Override
-    public boolean canAddPart(IPartSlot slot, IBlockState state, IMultipartTile tile) {
+    public boolean canAddPart(IPartSlot slot, BlockState state, IMultipartTile tile) {
         Preconditions.checkNotNull(slot);
         Preconditions.checkNotNull(state);
 
@@ -173,7 +177,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     @Override
-    public void addPart(IPartSlot slot, IBlockState state, IMultipartTile tile) {
+    public void addPart(IPartSlot slot, BlockState state, IMultipartTile tile) {
         IMultipart part = MultipartRegistry.INSTANCE.getPart(state.getBlock());
         Preconditions.checkState(part != null, "The blockstate " + state + " could not be converted to a multipart!");
 
@@ -182,7 +186,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         updateWorldState();
     }
 
-    private void addPartDo(IPartSlot slot, IBlockState state, IMultipart part, IMultipartTile tile) {
+    private void addPartDo(IPartSlot slot, BlockState state, IMultipart part, IMultipartTile tile) {
         if (missingParts != null) {
             missingParts.remove(slot);
         }
@@ -230,7 +234,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     protected void updateWorldState() {
-        IBlockState prevSt = getWorld().getBlockState(getPos());
+        BlockState prevSt = getWorld().getBlockState(getPos());
 
         if (parts.size() == 1) {
             PartInfo part = parts.values().iterator().next();
@@ -243,7 +247,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
 
             getWorld().setBlockState(getPos(), part.getState(), 0);
             if (part.getTile() != null) {
-                TileEntity te = part.getTile().getTileEntity();
+                TileEntity te = part.getTile().asTileEntity();
                 te.validate();
                 getWorld().setTileEntity(getPos(), te);
             }
@@ -251,7 +255,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
             this.isInWorld = false;
         } else {
             int currentTicking = countTickingParts();
-            boolean isTETicking = this instanceof ITickable;
+            boolean isTETicking = this instanceof ITickableTileEntity;
             TileMultipartContainer container = this;
             boolean needsBlockUpdate = false;
 
@@ -273,7 +277,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
                 if (container != this) transferTo(container);
 
                 WorldExt.setBlockStateHack(getWorld(), getPos(), MCMultiPart.multipart.getDefaultState()
-                        .with(BlockMultipartContainer.PROPERTY_TICKING, container instanceof ITickable), 0);
+                        .with(BlockMultipartContainer.PROPERTY_TICKING, container instanceof ITickableTileEntity), 0);
                 getWorld().setTileEntity(getPos(), container);
 
                 this.isInWorld = false;
@@ -281,9 +285,9 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
             }
         }
 
-        IBlockState st = getWorld().getBlockState(getPos());
+        BlockState st = getWorld().getBlockState(getPos());
         getWorld().markAndNotifyBlock(getPos(), null, prevSt, st, 1); // Only cause a block update, clients are notified through a packet
-        getWorld().checkLight(getPos());
+        getWorld().getLight(getPos());
         requestModelDataUpdate();
     }
 
@@ -317,52 +321,52 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     }
 
     @Override
-    public NBTTagCompound write(NBTTagCompound tag) {
+    public CompoundNBT write(CompoundNBT tag) {
         tag = super.write(tag);
         tag = writeParts(tag, false);
         return tag;
     }
 
     @Override
-    public void read(NBTTagCompound tag) {
+    public void read(CompoundNBT tag) {
         super.read(tag);
         readParts(tag, false, loadingWorld);
     }
 
     @Override
-    public NBTTagCompound getUpdateTag() {
-        NBTTagCompound tag = super.getUpdateTag();
+    public CompoundNBT getUpdateTag() {
+        CompoundNBT tag = super.getUpdateTag();
         writeParts(tag, true);
         return tag;
     }
 
     @Override
-    public void handleUpdateTag(NBTTagCompound tag) {
+    public void handleUpdateTag(CompoundNBT tag) {
         super.read(tag);
         readParts(tag, true, getPartWorld());
     }
 
     @Override
-    public SPacketUpdateTileEntity getUpdatePacket() {
-        return new SPacketUpdateTileEntity(getPartPos(), 0, getUpdateTag());
+    public SUpdateTileEntityPacket getUpdatePacket() {
+        return new SUpdateTileEntityPacket(getPartPos(), 0, getUpdateTag());
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
+    public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
         handleUpdateTag(pkt.getNbtCompound());
     }
 
-    private NBTTagCompound writeParts(NBTTagCompound tag, boolean update) {
-        NBTTagCompound parts = new NBTTagCompound();
+    private CompoundNBT writeParts(CompoundNBT tag, boolean update) {
+        CompoundNBT parts = new CompoundNBT();
         this.parts.forEach((s, i) -> {
-            NBTTagCompound t = new NBTTagCompound();
+            CompoundNBT t = new CompoundNBT();
             t.putInt("state", MCMultiPart.stateMap.get(i.getState()));
             IMultipartTile tile = i.getTile();
             if (tile != null) {
                 if (update) {
                     t.put("tile", tile.getPartUpdateTag());
                 } else {
-                    t.put("tile", tile.writePartToNBT(new NBTTagCompound()));
+                    t.put("tile", tile.writePart(new CompoundNBT()));
                 }
             }
             parts.put(Integer.toString(MCMultiPart.slotRegistry.getID(s)), t);
@@ -374,11 +378,11 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         return tag;
     }
 
-    private void readParts(NBTTagCompound tag, boolean update, World world) {
+    private void readParts(CompoundNBT tag, boolean update, World world) {
         World prevWorld = this.world;
         this.world = world;
-        ObjectIntIdentityMap<IBlockState> stateMap = GameData.getBlockStateIDMap();
-        NBTTagCompound parts = tag.getCompound("parts");
+        ObjectIntIdentityMap<BlockState> stateMap = GameData.getBlockStateIDMap();
+        CompoundNBT parts = tag.getCompound("parts");
         Set<IPartSlot> visitedSlots = new HashSet<>();
         for (String sID : parts.keySet()) {
             IPartSlot slot = MCMultiPart.slotRegistry.getValue(Integer.parseInt(sID));
@@ -386,12 +390,12 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
                 visitedSlots.add(slot);
                 PartInfo prevInfo = this.parts.get(slot);
 
-                NBTTagCompound t = parts.getCompound(sID);
-                IBlockState state = stateMap.getByValue(t.getInt("state"));
+                CompoundNBT t = parts.getCompound(sID);
+                BlockState state = stateMap.getByValue(t.getInt("state"));
                 if (prevInfo != null) {
                     prevInfo.setState(state);
                     if (t.contains("tile")) {
-                        NBTTagCompound tileTag = t.getCompound("tile");
+                        CompoundNBT tileTag = t.getCompound("tile");
                         IMultipartTile tile = prevInfo.getTile();
                         if (update) {
                             if (tile == null) {
@@ -409,7 +413,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
                     IMultipart part = MultipartRegistry.INSTANCE.getPart(state.getBlock());
                     if (part != null) {
                         IMultipartTile tile = null;
-                        NBTTagCompound tileTag = null;
+                        CompoundNBT tileTag = null;
                         if (t.contains("tile")) {
                             tileTag = t.getCompound("tile");
                             if (update) {
@@ -509,7 +513,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
     @OnlyIn(Dist.CLIENT)
     private boolean hasFastRendererC() {
         for (IPartInfo info : parts.values()) {
-            TileEntity te = info.getTile() != null ? info.getTile().getTileEntity() : null;
+            TileEntity te = info.getTile() != null ? info.getTile().asTileEntity() : null;
             if (te != null && TileEntityRendererDispatcher.instance.getRenderer(te) != null && !te.hasFastRenderer()) {
                 return false;
             }
@@ -517,7 +521,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         return true;
     }
 
-    @Override
+    //    @Override
     public boolean shouldRenderInPass(int pass) {
         if (FMLEnvironment.dist.isClient()) {
             shouldRenderInPassC(pass);
@@ -532,7 +536,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> capability, EnumFacing facing) {
+    public <T> LazyOptional<T> getCapability(Capability<T> capability, Direction facing) {
         if (capability == MCMPCapabilities.MULTIPART_CONTAINER) {
             return LazyOptional.of(() -> this).cast();
         }
@@ -563,9 +567,9 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
         }
     }
 
-    public static class Ticking extends TileMultipartContainer implements ITickable {
+    public static class Ticking extends TileMultipartContainer implements ITickableTileEntity {
 
-        private final Set<ITickable> tickingParts = Collections.newSetFromMap(new WeakHashMap<>());
+        private final Set<ITickableTileEntity> tickingParts = Collections.newSetFromMap(new WeakHashMap<>());
 
         private Ticking(World world, BlockPos pos) {
             super(MCMultiPart.TICKING_TYPE, world, pos);
@@ -580,7 +584,7 @@ public class TileMultipartContainer extends TileEntity implements IMultipartCont
             if (tickingParts.isEmpty()) {
                 updateWorldState();
             }
-            tickingParts.forEach(ITickable::tick);
+            tickingParts.forEach(ITickableTileEntity::tick);
         }
 
         @Override

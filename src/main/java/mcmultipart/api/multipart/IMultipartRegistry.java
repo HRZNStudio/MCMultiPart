@@ -9,15 +9,15 @@ import java.util.function.Predicate;
 
 public interface IMultipartRegistry {
 
-    public void registerPartWrapper(Block block, IMultipart part);
+    void registerPartWrapper(Block block, IMultipart part);
 
-    public IWrappedBlock registerStackWrapper(Item item, Predicate<ItemStack> predicate, Block block);
+    IWrappedBlock registerStackWrapper(Item item, Predicate<ItemStack> predicate, Block block);
 
-    public default IWrappedBlock registerStackWrapper(Item item, Block block) {
+    default IWrappedBlock registerStackWrapper(Item item, Block block) {
         return registerStackWrapper(item, s -> true, block);
     }
 
-    public default IWrappedBlock registerStackWrapper(Block block) {
+    default IWrappedBlock registerStackWrapper(Block block) {
         return registerStackWrapper(Item.getItemFromBlock(block), block);
     }
 

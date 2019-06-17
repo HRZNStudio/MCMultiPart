@@ -12,13 +12,13 @@ import mcmultipart.block.TileMultipartContainer;
 import mcmultipart.util.MCMPBlockReaderWrapper;
 import mcmultipart.util.MCMPWorldReaderWrapper;
 import mcmultipart.util.MCMPWorldWrapper;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumBlockRenderType;
+import net.minecraft.block.BlockRenderType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
@@ -45,7 +45,7 @@ public final class PartInfo implements IPartInfo {
     private final IPartSlot slot;
     private TileMultipartContainer container;
     private IMultipart part;
-    private IBlockState state;
+    private BlockState state;
     private IMultipartTile tile;
 
     private IWorldView view;
@@ -53,7 +53,7 @@ public final class PartInfo implements IPartInfo {
 
     private Set<Long> scheduledTicks;
 
-    public PartInfo(TileMultipartContainer container, IPartSlot slot, IMultipart part, IBlockState state, IMultipartTile tile) {
+    public PartInfo(TileMultipartContainer container, IPartSlot slot, IMultipart part, BlockState state, IMultipartTile tile) {
         this.container = container;
         this.slot = slot;
         setState(state, false);
@@ -61,7 +61,7 @@ public final class PartInfo implements IPartInfo {
     }
 
     public static PartInfo fromWorld(World world, BlockPos pos) {
-        IBlockState state = world.getBlockState(pos);
+        BlockState state = world.getBlockState(pos);
         IMultipart part = MultipartRegistry.INSTANCE.getPart(state.getBlock());
         Preconditions.checkState(part != null, "The blockstate " + state + " could not be converted to a multipart!");
         TileEntity te = world.getTileEntity(pos);
@@ -70,7 +70,7 @@ public final class PartInfo implements IPartInfo {
         return new PartInfo(null, slot, part, state, tile);
     }
 
-    public static void handleAdditionPacket(World world, BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound tag) {
+    public static void handleAdditionPacket(World world, BlockPos pos, IPartSlot slot, BlockState state, CompoundNBT tag) {
         MultipartHelper.getInfo(world, pos, slot).map(i -> i instanceof PartInfo ? (PartInfo) i : null).ifPresent(IPartInfo::remove);
         TileMultipartContainer tile = (TileMultipartContainer) MultipartHelper.getOrConvertContainer(world, pos).orElse(null);
         if (tile != null) {
@@ -94,10 +94,10 @@ public final class PartInfo implements IPartInfo {
             MCMultiPart.log.error("Failed to handle the addition of the part " + state.getBlock().getRegistryName());
             return;
         }
-        world.markBlockRangeForRenderUpdate(pos, pos);
+        world.markForRerender(pos);
     }
 
-    public static void handleUpdatePacket(World world, BlockPos pos, IPartSlot slot, IBlockState state, SPacketUpdateTileEntity pkt) {
+    public static void handleUpdatePacket(World world, BlockPos pos, IPartSlot slot, BlockState state, SUpdateTileEntityPacket pkt) {
         PartInfo info = MultipartHelper.getInfo(world, pos, slot).map(i -> i instanceof PartInfo ? (PartInfo) i : null).orElse(null);
         if (info != null) {
             info.setState(state);
@@ -135,13 +135,13 @@ public final class PartInfo implements IPartInfo {
                 return;
             }
         }
-        world.markBlockRangeForRenderUpdate(pos, pos);
+        world.markForRerender(pos);
     }
 
     public static void handleRemovalPacket(World world, BlockPos pos, IPartSlot slot) {
         MultipartHelper.getInfo(world, pos, slot).map(i -> i instanceof PartInfo ? (PartInfo) i : null).ifPresent(info -> {
             info.remove();
-            world.markBlockRangeForRenderUpdate(pos, pos);
+            world.markForRerender(pos);
         });
     }
 
@@ -173,11 +173,11 @@ public final class PartInfo implements IPartInfo {
     }
 
     @Override
-    public IBlockState getState() {
+    public BlockState getState() {
         return state;
     }
 
-    public void setState(IBlockState state) {
+    public void setState(BlockState state) {
         setState(state, true);
     }
 
@@ -195,11 +195,11 @@ public final class PartInfo implements IPartInfo {
         }
     }
 
-    private void setState(IBlockState state, boolean checkTE) {
+    private void setState(BlockState state, boolean checkTE) {
         if (state == this.state) {
             return;
         }
-        IBlockState oldState = this.state;
+        BlockState oldState = this.state;
         this.state = state;
 
         if (oldState == null || oldState.getBlock() != state.getBlock()) {
@@ -239,6 +239,17 @@ public final class PartInfo implements IPartInfo {
         return world;
     }
 
+    public World wrapAsNeeded(World world) {
+        if (view != null) {
+            if (world == this.world || world == this.world.getActualWorld()) {
+                return this.world;
+            } else {
+                return new MCMPWorldWrapper(world, this, view);
+            }
+        }
+        return world;
+    }
+
     public IBlockReader wrapAsNeeded(IBlockReader world) {
         if (view != null) {
             if (world == this.world || world == this.world.getActualWorld()) {
@@ -271,10 +282,10 @@ public final class PartInfo implements IPartInfo {
     }
 
     @OnlyIn(Dist.CLIENT)
-    public ClientInfo getInfo(IWorldReader world, BlockPos pos) {
-        IWorldReader world_ = wrapAsNeeded(world);
+    public ClientInfo getInfo(World world, BlockPos pos) {
+        World world_ = wrapAsNeeded(world);
         Set<BlockRenderLayer> renderLayers;
-        if (state.getRenderType() != EnumBlockRenderType.INVISIBLE) {
+        if (state.getRenderType() != BlockRenderType.INVISIBLE) {
             renderLayers = EnumSet.noneOf(BlockRenderLayer.class);
             RENDER_LAYERS//
                     .stream()//
@@ -290,22 +301,22 @@ public final class PartInfo implements IPartInfo {
     @OnlyIn(Dist.CLIENT)
     public class ClientInfo {
 
-        private final IBlockState actualState, extendedState;
+        private final BlockState actualState, extendedState;
         private final Set<BlockRenderLayer> renderLayers;
         private final IntUnaryOperator tintGetter;
 
-        private ClientInfo(IBlockState actualState, IBlockState extendedState, Set<BlockRenderLayer> renderLayers, IntUnaryOperator tintGetter) {
+        private ClientInfo(BlockState actualState, BlockState extendedState, Set<BlockRenderLayer> renderLayers, IntUnaryOperator tintGetter) {
             this.actualState = actualState;
             this.extendedState = extendedState;
             this.renderLayers = renderLayers;
             this.tintGetter = tintGetter;
         }
 
-        public IBlockState getActualState() {
+        public BlockState getActualState() {
             return actualState;
         }
 
-        public IBlockState getExtendedState() {
+        public BlockState getExtendedState() {
             return extendedState;
         }
 

@@ -2,16 +2,19 @@ package mcmultipart.api.microblock;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUseContext;
 import net.minecraft.util.BlockRenderLayer;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorldReader;
@@ -24,19 +27,19 @@ import java.util.Optional;
 @SuppressWarnings("deprecation")
 public class MicroMaterialBlock extends MicroMaterial {
 
-    private final IBlockState state;
+    private final BlockState state;
     private final Item item;
     private final float hardness;
 
-    public MicroMaterialBlock(IBlockState state) {
+    public MicroMaterialBlock(BlockState state) {
         this(state, ObfuscationReflectionHelper.getPrivateValue(Block.class, state.getBlock(), "field_149782_v"));
     }
 
-    public MicroMaterialBlock(IBlockState state, float hardness) {
+    public MicroMaterialBlock(BlockState state, float hardness) {
         this(state, Item.getItemFromBlock(state.getBlock()), hardness);
     }
 
-    public MicroMaterialBlock(IBlockState state, Item item, float hardness) {
+    public MicroMaterialBlock(BlockState state, Item item, float hardness) {
         super(false);
         this.state = state;
         this.item = item;
@@ -57,7 +60,7 @@ public class MicroMaterialBlock extends MicroMaterial {
 
     @Override
     public boolean isSolid() {
-        return state.isFullCube();
+        return state.isSolid();
     }
 
     @Override
@@ -81,32 +84,32 @@ public class MicroMaterialBlock extends MicroMaterial {
     }
 
     @Override
-    public SoundType getSound(IBlockState state, World world, BlockPos pos, @Nullable Entity entity) {
+    public SoundType getSound(BlockState state, World world, BlockPos pos, @Nullable Entity entity) {
         return state.getBlock().getSoundType(state, world, pos, entity);
     }
 
     @Override
-    public IBlockState getDefaultState() {
+    public BlockState getDefaultState() {
         return state;
     }
 
     @Override
-    public IBlockState getStateForPlacement(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, EntityLivingBase placer, EnumHand hand) {
-        return state.getBlock().getStateForPlacement(new BlockItemUseContext(world, placer instanceof EntityPlayer ? (EntityPlayer) placer : null, placer.getHeldItem(hand), pos, facing, hitX, hitY, hitZ));
+    public BlockState getStateForPlacement(World world, BlockPos pos, Direction facing, float hitX, float hitY, float hitZ, LivingEntity placer, Hand hand) {
+        return state.getBlock().getStateForPlacement(new BlockItemUseContext(new ItemUseContext(world, placer instanceof PlayerEntity ? (PlayerEntity) placer : null, placer.getHeldItem(hand), pos, facing, hitX, hitY, hitZ)));
     }
 
     @Override
-    public IBlockState getActualState(IWorldReader world, BlockPos pos, IBlockState state) {
+    public BlockState getActualState(IWorldReader world, BlockPos pos, BlockState state) {
         return state;
     }
 
     @Override
-    public IBlockState getExtendedState(IWorldReader world, BlockPos pos, IBlockState state) {
+    public BlockState getExtendedState(IWorldReader world, BlockPos pos, BlockState state) {
         return state.getExtendedState(world, pos);
     }
 
     @Override
-    public boolean canRenderInLayer(IBlockState state, BlockRenderLayer layer) {
+    public boolean canRenderInLayer(BlockState state, BlockRenderLayer layer) {
         return state.getBlock().canRenderInLayer(state, layer);
     }
 

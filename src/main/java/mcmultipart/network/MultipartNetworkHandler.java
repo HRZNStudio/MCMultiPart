@@ -2,8 +2,8 @@ package mcmultipart.network;
 
 import mcmultipart.MCMultiPart;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerEntityMP;
 import net.minecraft.server.management.PlayerChunkMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -78,9 +78,9 @@ public class MultipartNetworkHandler {
         WorldServer world = DimensionManager.getWorld(LogicalSidedProvider.INSTANCE.get(LogicalSide.SERVER), DimensionType.getById(dim), false, false);
         if (world != null) {
             PlayerChunkMap manager = world.getPlayerChunkMap();
-            for (EntityPlayer player : world.playerEntities) {
-                if (manager.isPlayerWatchingChunk((EntityPlayerMP) player, chunkX, chunkY)) {
-                    MCMultiPart.channel.send(PacketDistributor.PLAYER.with(() -> (EntityPlayerMP) player), new PacketMultipartAction(list));
+            for (PlayerEntity player : world.playerEntities) {
+                if (manager.isPlayerWatchingChunk((PlayerEntityMP) player, chunkX, chunkY)) {
+                    MCMultiPart.channel.send(PacketDistributor.PLAYER.with(() -> (PlayerEntityMP) player), new PacketMultipartAction(list));
                 }
             }
         }

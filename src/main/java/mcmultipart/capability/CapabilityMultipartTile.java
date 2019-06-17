@@ -1,8 +1,8 @@
 package mcmultipart.capability;
 
 import mcmultipart.api.multipart.IMultipartTile;
-import net.minecraft.nbt.INBTBase;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.nbt.INBT;
+import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.Capability.IStorage;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -14,12 +14,12 @@ public class CapabilityMultipartTile {
         CapabilityManager.INSTANCE.register(IMultipartTile.class, new IStorage<IMultipartTile>() {
 
             @Override
-            public INBTBase writeNBT(Capability<IMultipartTile> capability, IMultipartTile instance, EnumFacing side) {
+            public INBT writeNBT(Capability<IMultipartTile> capability, IMultipartTile instance, Direction side) {
                 return null;
             }
 
             @Override
-            public void readNBT(Capability<IMultipartTile> capability, IMultipartTile instance, EnumFacing side, INBTBase nbt) {
+            public void readNBT(Capability<IMultipartTile> capability, IMultipartTile instance, Direction side, INBT nbt) {
             }
         }, () -> null);
     }

@@ -1,14 +1,9 @@
 package mcmultipart.api.multipart;
 
 import mcmultipart.api.container.IPartInfo;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ITickable;
-import net.minecraft.util.Mirror;
-import net.minecraft.util.Rotation;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -17,140 +12,67 @@ import net.minecraftforge.common.util.LazyOptional;
 
 public interface IMultipartTile {
 
-    public static IMultipartTile wrap(TileEntity tile) {
+    static IMultipartTile wrap(TileEntity tile) {
         return new IMultipartTile() {
 
             @Override
-            public TileEntity getTileEntity() {
+            public TileEntity asTileEntity() {
                 return tile;
             }
         };
     }
 
-    public default TileEntity getTileEntity() {
+    default TileEntity asTileEntity() {
         if (!(this instanceof TileEntity)) {
-            throw new IllegalStateException("This multipart tile isn't a TileEntity. Override IMultipartTile#getTileEntity()!");
+            throw new IllegalStateException("This multipart tile isn't a TileEntity. Override IMultipartTile#asTileEntity()!");
         }
         return (TileEntity) this;
     }
 
-    public default boolean isTickable() {
+    default boolean isTickable() {
         return getTickable() != null;
     }
 
-    public default ITickable getTickable() {
-        return getTileEntity() instanceof ITickable ? (ITickable) getTileEntity() : null;
+    default ITickableTileEntity getTickable() {
+        return asTileEntity() instanceof ITickableTileEntity ? (ITickableTileEntity) asTileEntity() : null;
     }
 
-    public default void setPartInfo(IPartInfo info) {
+    default void setPartInfo(IPartInfo info) {
     }
 
-    public default World getPartWorld() {
-        return getTileEntity().getWorld();
+    default World getPartWorld() {
+        return asTileEntity().getWorld();
     }
 
-    public default void setPartWorld(World world) {
-        getTileEntity().setWorld(world);
+    default void setPartWorld(World world) {
+        asTileEntity().setWorld(world);
     }
 
-    public default boolean hasPartWorld() {
-        return getTileEntity().hasWorld();
+    default boolean hasPartWorld() {
+        return asTileEntity().hasWorld();
     }
 
-    public default BlockPos getPartPos() {
-        return getTileEntity().getPos();
+    default BlockPos getPartPos() {
+        return asTileEntity().getPos();
     }
 
-    public default void setPartPos(BlockPos pos) {
-        getTileEntity().setPos(pos);
+    default void setPartPos(BlockPos pos) {
+        asTileEntity().setPos(pos);
     }
 
-    public default void readPartFromNBT(NBTTagCompound compound) {
-        getTileEntity().read(compound);
+    default <T> LazyOptional<T> getPartCapability(Capability<T> capability, Direction side) {
+        return asTileEntity().getCapability(capability, side);
     }
 
-    public default NBTTagCompound writePartToNBT(NBTTagCompound compound) {
-        return getTileEntity().write(compound);
+    default <T> LazyOptional<T> getPartCapability(Capability<T> capability) {
+        return asTileEntity().getCapability(capability);
     }
 
-    public default void markPartDirty() {
-        getTileEntity().markDirty();
+    default AxisAlignedBB getPartRenderBoundingBox() {
+        return asTileEntity().getRenderBoundingBox();
     }
 
-    public default double getMaxPartRenderDistanceSquared() {
-        return getTileEntity().getMaxRenderDistanceSquared();
+    default double getMaxPartRenderDistanceSquared() {
+        return asTileEntity().getMaxRenderDistanceSquared();
     }
-
-    public default boolean isPartRemoved() {
-        return getTileEntity().isRemoved();
-    }
-
-    public default void removePart() {
-        getTileEntity().remove();
-    }
-
-    public default void validatePart() {
-        getTileEntity().validate();
-    }
-
-    public default void updatePartContainerInfo() {
-        getTileEntity().updateContainingBlockInfo();
-    }
-
-    public default void rotatePart(Rotation rotation) {
-        getTileEntity().rotate(rotation);
-    }
-
-    public default void mirrorPart(Mirror mirror) {
-        getTileEntity().mirror(mirror);
-    }
-
-    public default SPacketUpdateTileEntity getPartUpdatePacket() {
-        return getTileEntity().getUpdatePacket();
-    }
-
-    public default void onPartDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
-        getTileEntity().onDataPacket(net, pkt);
-    }
-
-    public default NBTTagCompound getPartUpdateTag() {
-        return getTileEntity().getUpdateTag();
-    }
-
-    public default void handlePartUpdateTag(NBTTagCompound tag) {
-        getTileEntity().handleUpdateTag(tag);
-    }
-
-    public default void onPartChunkUnloaded() {
-        getTileEntity().onChunkUnloaded();
-    }
-
-    public default boolean shouldRenderPartInPass(int pass) {
-        return getTileEntity().shouldRenderInPass(pass);
-    }
-
-    public default AxisAlignedBB getPartRenderBoundingBox() {
-        return getTileEntity().getRenderBoundingBox();
-    }
-
-    public default boolean canPartRenderBreaking() {
-        return getTileEntity().canRenderBreaking();
-    }
-
-    public default void onPartLoad() {
-        getTileEntity().onLoad();
-    }
-
-    public default boolean hasFastPartRenderer() {
-        return getTileEntity().hasFastRenderer();
-    }
-
-    public default <T> LazyOptional<T> getPartCapability(Capability<T> capability, EnumFacing facing) {
-        return getTileEntity().getCapability(capability, facing);
-    }
-
-    public default boolean onlyOpsCanSetPartNbt() {
-        return getTileEntity().onlyOpsCanSetNbt();
-    }
-
 }

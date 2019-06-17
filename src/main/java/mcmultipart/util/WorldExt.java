@@ -1,6 +1,6 @@
 package mcmultipart.util;
 
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
@@ -24,7 +24,7 @@ public class WorldExt {
      *              of the worker pool, if this is a client world and flag 4 is clear. Flag 16 will prevent observers from seeing
      *              this change. Flags can be OR-ed
      */
-    public static void setBlockStateHack(World self, BlockPos pos, IBlockState state, int flags) {
+    public static void setBlockStateHack(World self, BlockPos pos, BlockState state, int flags) {
         try {
             Chunk chunk = self.getChunk(pos);
 
@@ -33,7 +33,7 @@ public class WorldExt {
             int z = pos.getZ() & 15;
             ChunkSection[] storageArrays = chunk.getSections();
             ChunkSection storage = storageArrays[pos.getY() >> 4];
-            if (storage != null) storage.set(x, y, z, state);
+            if (storage != null) storage.set(x, y, z, state,false);
         } catch (Throwable e) { // Chunk$storageArrays.invoke throws Throwable
             e.printStackTrace();
         }

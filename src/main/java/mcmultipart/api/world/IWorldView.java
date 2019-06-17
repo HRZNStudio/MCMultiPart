@@ -1,32 +1,32 @@
 package mcmultipart.api.world;
 
 import mcmultipart.api.container.IPartInfo;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 
 public interface IWorldView {
 
-    public static IWorldView getDefaultFor(IPartInfo part) {
+    static IWorldView getDefaultFor(IPartInfo part) {
         return new IWorldView() {
 
             @Override
-            public IBlockState getActualState(IBlockReader world, BlockPos pos) {
+            public BlockState getActualState(IBlockReader world, BlockPos pos) {
                 return pos.equals(part.getPartPos()) ? part.getState() : world.getBlockState(pos);
             }
 
             @Override
             public TileEntity getActualTile(IBlockReader world, BlockPos pos) {
-                return pos.equals(part.getPartPos()) ? part.getTile() != null ? part.getTile().getTileEntity() : null
+                return pos.equals(part.getPartPos()) ? part.getTile() != null ? part.getTile().asTileEntity() : null
                         : world.getTileEntity(pos);
             }
 
         };
     }
 
-    public IBlockState getActualState(IBlockReader world, BlockPos pos);
+    BlockState getActualState(IBlockReader world, BlockPos pos);
 
-    public TileEntity getActualTile(IBlockReader world, BlockPos pos);
+    TileEntity getActualTile(IBlockReader world, BlockPos pos);
 
 }

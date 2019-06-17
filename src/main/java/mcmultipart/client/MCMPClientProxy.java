@@ -1,21 +1,22 @@
 package mcmultipart.client;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import mcmultipart.MCMPCommonProxy;
 import mcmultipart.MCMultiPart;
 import mcmultipart.api.event.DrawMultipartHighlightEvent;
 import mcmultipart.block.BlockMultipartContainer;
 import mcmultipart.block.TileMultipartContainer;
 import mcmultipart.multipart.PartInfo;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.material.Material;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
-import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.model.ModelResourceLocation;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
@@ -41,7 +42,7 @@ public class MCMPClientProxy extends MCMPCommonProxy {
     }
 
     @Override
-    public EntityPlayerSP getPlayer() {
+    public ClientPlayerEntity getPlayer() {
         return Minecraft.getInstance().player;
     }
 
@@ -54,7 +55,7 @@ public class MCMPClientProxy extends MCMPCommonProxy {
     public void scheduleTick(Runnable runnable, Dist side) {
         super.scheduleTick(runnable, side);
         if (side == Dist.CLIENT) {
-            Minecraft.getInstance().addScheduledTask(runnable);
+            Minecraft.getInstance().execute(runnable);
         }
     }
 
@@ -68,16 +69,13 @@ public class MCMPClientProxy extends MCMPCommonProxy {
 
     @SubscribeEvent
     public void onDrawHighlight(DrawBlockHighlightEvent event) {
-        if (event instanceof DrawMultipartHighlightEvent) {
+        if (event instanceof DrawMultipartHighlightEvent || event.getTarget().getType()!= RayTraceResult.Type.BLOCK) {
             return;
         }
-        RayTraceResult hit = event.getTarget();
-        if (hit.type != RayTraceResult.Type.BLOCK) {
-            return;
-        }
+        BlockRayTraceResult hit = (BlockRayTraceResult)event.getTarget();
 
-        BlockPos pos = hit.getBlockPos();
-        EntityPlayer player = event.getPlayer();
+        BlockPos pos = hit.getPos();
+        PlayerEntity player = Minecraft.getInstance().player;
         if (player == null) {
             return;
         }
@@ -94,21 +92,21 @@ public class MCMPClientProxy extends MCMPCommonProxy {
 
             int slotID = hit.subHit;
             PartInfo info = new HashMap<>(tile.get().getParts()).get(MCMultiPart.slotRegistry.getValue(slotID));
-            if (info == null || !(hit.hitInfo instanceof RayTraceResult)) {
+            if (info == null || !(hit.hitInfo instanceof BlockRayTraceResult)) {
                 return;
             }
-            hit = (RayTraceResult) hit.hitInfo;
+            hit = (BlockRayTraceResult) hit.hitInfo;
 
             float partialTicks = event.getPartialTicks();
             if (!MinecraftForge.EVENT_BUS
-                    .post(new DrawMultipartHighlightEvent(event.getContext(), player, hit, slotID, partialTicks, info))) {
+                    .post(new DrawMultipartHighlightEvent(event.getContext(), event.getInfo(), hit, slotID, partialTicks, info))) {
                 GlStateManager.enableBlend();
                 GlStateManager.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
                         GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
                 GlStateManager.lineWidth(2.0F);
-                GlStateManager.disableTexture2D();
+                GlStateManager.disableTexture();
                 GlStateManager.depthMask(false);
-                IBlockState state = info.getState();
+                BlockState state = info.getState();
 
                 if (state.getMaterial() != Material.AIR && world.getWorldBorder().contains(pos)) {
                     double x = player.lastTickPosX + (player.posX - player.lastTickPosX) * partialTicks;
@@ -119,7 +117,7 @@ public class MCMPClientProxy extends MCMPCommonProxy {
                 }
 
                 GlStateManager.depthMask(true);
-                GlStateManager.enableTexture2D();
+                GlStateManager.enableTexture();
                 GlStateManager.disableBlend();
             }
 

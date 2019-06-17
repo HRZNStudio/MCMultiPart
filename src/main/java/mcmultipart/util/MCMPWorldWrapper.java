@@ -12,15 +12,14 @@ import mcmultipart.multipart.PartInfo;
 import mcmultipart.network.MultipartAction;
 import mcmultipart.network.MultipartNetworkHandler;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorldReaderBase;
+import net.minecraft.world.IEnviromentBlockReader;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
 import net.minecraftforge.common.capabilities.CapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
@@ -30,22 +29,15 @@ import javax.annotation.Nullable;
 public class MCMPWorldWrapper extends World implements IMultipartWorld {
 
     private final PartInfo part;
-    private final PartInfo partInfo;
     private final IWorldView view;
-    @Delegate(excludes = Ignore.class, types = {World.class, IWorldReaderBase.class})
+    @Delegate(excludes = Ignore.class, types = {World.class, IEnviromentBlockReader.class})
     private final World world;
 
-    public MCMPWorldWrapper(PartInfo part, PartInfo partInfo, IWorldView view) {
-        super(part.getActualWorld().getSaveHandler(), part.getActualWorld().getSavedDataStorage(), part.getActualWorld().getWorldInfo(), part.getActualWorld().dimension, part.getActualWorld().profiler, part.getActualWorld().isRemote);
+    public MCMPWorldWrapper(PartInfo part, IWorldView view) {
+        super(part.getActualWorld().getWorldInfo(), part.getActualWorld().getDimension().getType(), (w, d) -> part.getActualWorld().getChunkProvider(), part.getActualWorld().getProfiler(), part.getActualWorld().isRemote);
         this.part = part;
-        this.partInfo = partInfo;
         this.view = view;
         this.world = part.getActualWorld();
-    }
-
-    @Override
-    protected IChunkProvider createChunkProvider() {
-        return null;
     }
 
     @Override
@@ -55,11 +47,11 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
 
     @Override
     public IPartInfo getPartInfo() {
-        return partInfo;
+        return part;
     }
 
     @Override
-    public boolean setBlockState(BlockPos pos, IBlockState state, int flags) {
+    public boolean setBlockState(BlockPos pos, BlockState state, int flags) {
         if (part.getPartPos().equals(pos)) {
             if (state.getBlock() == Blocks.AIR) {
                 part.remove();
@@ -67,7 +59,7 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
             } else {
                 IMultipart newPart = MultipartRegistry.INSTANCE.getPart(state.getBlock());
                 if (part.getPart() == newPart) {
-                    IBlockState prevState = part.getState();
+                    BlockState prevState = part.getState();
                     part.setState(state);
                     notifyBlockUpdate(pos, prevState, state, flags);
                     return true;
@@ -81,10 +73,10 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
     }
 
     @Override
-    public void markAndNotifyBlock(BlockPos pos, Chunk chunk, IBlockState iblockstate, IBlockState newState, int flags) {
+    public void markAndNotifyBlock(BlockPos pos, Chunk chunk, BlockState BlockState, BlockState newState, int flags) {
         if (part.getPartPos().equals(pos)) {
-            if ((flags & 2) != 0 && (!this.isRemote || (flags & 4) == 0) && (chunk == null || chunk.isPopulated())) {
-                notifyBlockUpdate(pos, iblockstate, newState, flags);
+            if ((flags & 2) != 0 && (!this.isRemote || (flags & 4) == 0) ) {
+                notifyBlockUpdate(pos, BlockState, newState, flags);
             }
             if ((flags & 0b00001) != 0) {
                 notifyNeighborsOfStateChange(pos, newState.getBlock());
@@ -98,10 +90,10 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
                     this.updateComparatorOutputLevel(pos, newState.getBlock());
                 }
             } else if ((flags & 0b10000) == 0) {
-                notifyBlockUpdate(pos, iblockstate, newState, flags);
+                notifyBlockUpdate(pos, BlockState, newState, flags);
             }
         } else {
-            getActualWorld().markAndNotifyBlock(pos, chunk, iblockstate, newState, flags);
+            getActualWorld().markAndNotifyBlock(pos, chunk, BlockState, newState, flags);
         }
     }
 
@@ -118,13 +110,13 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
     }
 
     @Override
-    public void notifyBlockUpdate(BlockPos pos, IBlockState oldState, IBlockState newState, int flags) {
+    public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
         if (part.getPartPos().equals(pos)) {
             if ((flags & 0b00010) != 0) {
                 MultipartNetworkHandler.queuePartChange(part.getActualWorld(), new MultipartAction.Change(part));
             }
             if ((flags & 0b00100) == 0) {
-                markBlockRangeForRenderUpdate(pos, pos);
+                markForRerender(pos);
             }
             return;
         }
@@ -132,7 +124,7 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
     }
 
     @Override
-    public void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, EnumFacing skipSide) {
+    public void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, Direction skipSide) {
         part.getContainer().getParts().values().forEach(i -> {
             if (i != part) {
                 i.getPart().onPartChanged(i, part);
@@ -142,7 +134,7 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
     }
 
     @Override
-    public IBlockState getBlockState(BlockPos pos) {
+    public BlockState getBlockState(BlockPos pos) {
         return view.getActualState(getActualWorld(), pos);
     }
 
@@ -179,33 +171,34 @@ public class MCMPWorldWrapper extends World implements IMultipartWorld {
         }
     }
 
-    @Override
-    public void markTileEntityForRemoval(TileEntity tile) {
-        if (tile != null) {
-            BlockPos pos = tile.getPos();
-            if (part.getPartPos().equals(pos)) {
-                tile.remove();
-                this.updateComparatorOutputLevel(pos, getBlockState(pos).getBlock());
-                return;
-            }
-        }
-        getActualWorld().markTileEntityForRemoval(tile);
-    }
+//    @Override
+//    public void markTileEntityForRemoval(TileEntity tile) {
+//        if (tile != null) {
+//            BlockPos pos = tile.getPos();
+//            if (part.getPartPos().equals(pos)) {
+//                tile.remove();
+//                this.updateComparatorOutputLevel(pos, getBlockState(pos).asBlock());
+//                return;
+//            }
+//        }
+//        getActualWorld().markTileEntityForRemoval(tile);
+//    }
+
 
     private interface Ignore {
-        void notifyBlockUpdate(BlockPos pos, IBlockState oldState, IBlockState newState, int flags);
+        void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags);
 
         void setTileEntity(BlockPos pos, TileEntity tile);
 
-        boolean setBlockState(BlockPos pos, IBlockState state, int flags);
+        boolean setBlockState(BlockPos pos, BlockState state, int flags);
 
-        void markAndNotifyBlock(BlockPos pos, Chunk chunk, IBlockState iblockstate, IBlockState newState, int flags);
+        void markAndNotifyBlock(BlockPos pos, Chunk chunk, BlockState BlockState, BlockState newState, int flags);
 
         boolean destroyBlock(BlockPos pos, boolean dropBlock);
 
-        void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, EnumFacing skipSide);
+        void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, Direction skipSide);
 
-        IBlockState getBlockState(BlockPos pos);
+        BlockState getBlockState(BlockPos pos);
 
         TileEntity getTileEntity(BlockPos pos);
 

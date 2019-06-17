@@ -21,9 +21,11 @@ import mcmultipart.multipart.MultipartRegistry;
 import mcmultipart.network.MultipartNetworkHandler;
 import mcmultipart.slot.SlotRegistry;
 import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import net.minecraft.util.ObjectIntIdentityMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -32,7 +34,9 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.ExtensionPoint;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -76,7 +80,7 @@ public class MCMultiPart {
     public static ForgeRegistry<IPartSlot> slotRegistry;
     public static ForgeRegistry<MicroMaterial> microMaterialRegistry;
     public static ForgeRegistry<MicroblockType> microblockTypeRegistry;
-    public static ObjectIntIdentityMap<IBlockState> stateMap;
+    public static ObjectIntIdentityMap<BlockState> stateMap;
 
     public static TileEntityType<TileMultipartContainer> TYPE;
     public static TileEntityType<TileMultipartContainer.Ticking> TICKING_TYPE;
@@ -200,11 +204,11 @@ public class MCMultiPart {
 
         MethodHandle viewSide = MethodHandles
                 .lookup().unreflect(SlotRegistry.class.getMethod("viewContainer", ISlottedContainer.class,
-                        Function.class, Function.class, Object.class, boolean.class, EnumFacing.class))
+                        Function.class, Function.class, Object.class, boolean.class, Direction.class))
                 .bindTo(SlotRegistry.INSTANCE);
         MethodHandle viewEdge = MethodHandles.lookup()
                 .unreflect(SlotRegistry.class.getMethod("viewContainer", ISlottedContainer.class, Function.class,
-                        Function.class, Object.class, boolean.class, EnumEdgeSlot.class, EnumFacing.class))
+                        Function.class, Object.class, boolean.class, EnumEdgeSlot.class, Direction.class))
                 .bindTo(SlotRegistry.INSTANCE);
         ObfuscationReflectionHelper.setPrivateValue(SlotUtil.class, null, viewSide, "viewSide");
         ObfuscationReflectionHelper.setPrivateValue(SlotUtil.class, null, viewEdge, "viewEdge");

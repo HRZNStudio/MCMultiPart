@@ -4,10 +4,10 @@ import com.google.common.base.Throwables;
 import mcmultipart.api.container.IPartInfo;
 import mcmultipart.api.slot.IPartSlot;
 import mcmultipart.multipart.PartInfo;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.play.server.SPacketUpdateTileEntity;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.util.math.BlockPos;
 
 import java.lang.invoke.MethodHandle;
@@ -26,12 +26,12 @@ public abstract class MultipartAction {
         this.type = type;
     }
 
-    public abstract void handlePacket(EntityPlayer player);
+    public abstract void handlePacket(PlayerEntity player);
 
     public static final class Add extends DataCarrier {
         public static final int TYPE = 0;
 
-        public Add(BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound data) {
+        public Add(BlockPos pos, IPartSlot slot, BlockState state, CompoundNBT data) {
             super(TYPE, pos, slot, state, data);
         }
 
@@ -40,39 +40,39 @@ public abstract class MultipartAction {
         }
 
         @Override
-        public void handlePacket(EntityPlayer player) {
+        public void handlePacket(PlayerEntity player) {
             PartInfo.handleAdditionPacket(player.world, pos, slot, state, data);
         }
     }
 
     public static final class Change extends DataCarrier {
         public static final int TYPE = 1;
-        private static final MethodHandle SPacketUpdateTileEntity$nbt;
-        private static final Function<SPacketUpdateTileEntity, NBTTagCompound> getUpdateTag;
+        private static final MethodHandle SUpdateTileEntityPacket$nbt;
+        private static final Function<SUpdateTileEntityPacket, CompoundNBT> getUpdateTag;
 
         static {
             try {
                 Field f = null;
                 try {
-                    f = SPacketUpdateTileEntity.class.getDeclaredField("field_148860_e");
+                    f = SUpdateTileEntityPacket.class.getDeclaredField("field_148860_e");
                 } catch (Exception e) {
-                    f = SPacketUpdateTileEntity.class.getDeclaredField("nbt");
+                    f = SUpdateTileEntityPacket.class.getDeclaredField("nbt");
                 }
-                SPacketUpdateTileEntity$nbt = MethodHandles.lookup().unreflectGetter(f);
+                SUpdateTileEntityPacket$nbt = MethodHandles.lookup().unreflectGetter(f);
             } catch (Exception ex) {
                 throw Throwables.propagate(ex);
             }
 
             getUpdateTag = it -> {
                 try {
-                    return (NBTTagCompound) SPacketUpdateTileEntity$nbt.invokeExact(it);
+                    return (CompoundNBT) SUpdateTileEntityPacket$nbt.invokeExact(it);
                 } catch (Throwable ex) {
                     throw Throwables.propagate(ex);
                 }
             };
         }
 
-        public Change(BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound data) {
+        public Change(BlockPos pos, IPartSlot slot, BlockState state, CompoundNBT data) {
             super(TYPE, pos, slot, state, data);
         }
 
@@ -81,8 +81,8 @@ public abstract class MultipartAction {
         }
 
         @Override
-        public void handlePacket(EntityPlayer player) {
-            PartInfo.handleUpdatePacket(player.world, pos, slot, state, data != null ? new SPacketUpdateTileEntity(pos, 0, data) : null);
+        public void handlePacket(PlayerEntity player) {
+            PartInfo.handleUpdatePacket(player.world, pos, slot, state, data != null ? new SUpdateTileEntityPacket(pos, 0, data) : null);
         }
     }
 
@@ -94,16 +94,16 @@ public abstract class MultipartAction {
         }
 
         @Override
-        public void handlePacket(EntityPlayer player) {
+        public void handlePacket(PlayerEntity player) {
             PartInfo.handleRemovalPacket(player.world, pos, slot);
         }
     }
 
     public static abstract class DataCarrier extends MultipartAction {
-        public final IBlockState state;
-        public final NBTTagCompound data;
+        public final BlockState state;
+        public final CompoundNBT data;
 
-        private DataCarrier(int type, BlockPos pos, IPartSlot slot, IBlockState state, NBTTagCompound data) {
+        private DataCarrier(int type, BlockPos pos, IPartSlot slot, BlockState state, CompoundNBT data) {
             super(type, pos, slot);
             this.state = state;
             this.data = data;

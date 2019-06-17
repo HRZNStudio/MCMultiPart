@@ -3,7 +3,7 @@ package mcmultipart.api.container;
 import mcmultipart.api.multipart.IMultipart;
 import mcmultipart.api.multipart.IMultipartTile;
 import mcmultipart.api.slot.IPartSlot;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -16,7 +16,7 @@ public interface IPartInfo {
     World getPartWorld();
 
     default BlockPos getPartPos() {
-        return getContainer() != null ? getContainer().getPartPos() : BlockPos.ORIGIN;
+        return getContainer() != null ? getContainer().getPartPos() : BlockPos.ZERO;
     }
 
     IMultipartContainer getContainer();
@@ -25,7 +25,7 @@ public interface IPartInfo {
 
     IMultipart getPart();
 
-    IBlockState getState();
+    BlockState getState();
 
     IMultipartTile getTile();
 
